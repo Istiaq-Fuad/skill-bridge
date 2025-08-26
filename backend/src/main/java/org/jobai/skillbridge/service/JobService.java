@@ -1,7 +1,7 @@
-package org.istiaqfuad.skillbridge.service;
+package org.jobai.skillbridge.service;
 
-import org.istiaqfuad.skillbridge.model.JobPost;
-import org.istiaqfuad.skillbridge.repo.JobRepo;
+import org.jobai.skillbridge.model.JobPost;
+import org.jobai.skillbridge.repo.JobRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

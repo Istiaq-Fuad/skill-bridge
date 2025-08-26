@@ -1,4 +1,4 @@
-package org.istiaqfuad.skillbridge;
+package org.jobai.skillbridge;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

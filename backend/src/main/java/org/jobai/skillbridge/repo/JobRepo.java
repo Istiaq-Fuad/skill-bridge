@@ -1,6 +1,6 @@
-package org.istiaqfuad.skillbridge.repo;
+package org.jobai.skillbridge.repo;
 
-import org.istiaqfuad.skillbridge.model.JobPost;
+import org.jobai.skillbridge.model.JobPost;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

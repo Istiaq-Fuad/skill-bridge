@@ -1,7 +1,7 @@
-package org.istiaqfuad.skillbridge.controller;
+package org.jobai.skillbridge.controller;
 
-import org.istiaqfuad.skillbridge.model.JobPost;
-import org.istiaqfuad.skillbridge.service.JobService;
+import org.jobai.skillbridge.model.JobPost;
+import org.jobai.skillbridge.service.JobService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

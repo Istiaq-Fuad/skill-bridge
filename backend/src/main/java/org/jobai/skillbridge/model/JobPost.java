@@ -1,4 +1,4 @@
-package org.istiaqfuad.skillbridge.model;
+package org.jobai.skillbridge.model;
 
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
