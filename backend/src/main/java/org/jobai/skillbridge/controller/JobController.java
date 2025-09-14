@@ -14,7 +14,7 @@ public class JobController {
     @Autowired
     public JobService service;
 
-    @GetMapping("/")
+    @GetMapping("/home")
     public String home() {
         return "Welcome to the Job Portal";
     }
