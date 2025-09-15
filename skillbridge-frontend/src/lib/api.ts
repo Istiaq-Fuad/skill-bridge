@@ -93,7 +93,10 @@ class ApiClient {
   }
 
   private getAuthHeader(): Record<string, string> {
-    const token = localStorage.getItem("token");
+    // For now, keep using localStorage for API calls
+    // The auth store will sync with localStorage
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
