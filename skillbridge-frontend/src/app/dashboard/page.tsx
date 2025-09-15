@@ -38,13 +38,13 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 lg:space-y-8">
         {/* Welcome Section */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <div className="bg-card rounded-lg shadow-sm border p-6">
+          <h1 className="text-2xl font-bold text-foreground mb-2">
             Welcome back, {user.firstName || user.username}!
           </h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             {user.role === "JOB_SEEKER"
               ? "Find your next opportunity and advance your career."
               : "Manage your job postings and find the best talent."}
@@ -55,7 +55,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -124,7 +124,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
@@ -146,8 +146,8 @@ export default function DashboardPage() {
                     <span className="text-sm">Browse available jobs</span>
                   </div>
                   <div className="flex items-center space-x-4">
-                    <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                    <span className="text-sm text-gray-500">
+                    <div className="w-2 h-2 bg-muted rounded-full"></div>
+                    <span className="text-sm text-muted-foreground">
                       Upload your resume
                     </span>
                   </div>
@@ -159,14 +159,14 @@ export default function DashboardPage() {
                     <span className="text-sm">Post a new job</span>
                   </div>
                   <div className="flex items-center space-x-4">
-                    <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                    <span className="text-sm text-gray-500">
+                    <div className="w-2 h-2 bg-muted rounded-full"></div>
+                    <span className="text-sm text-muted-foreground">
                       Review applications
                     </span>
                   </div>
                   <div className="flex items-center space-x-4">
-                    <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                    <span className="text-sm text-gray-500">
+                    <div className="w-2 h-2 bg-muted rounded-full"></div>
+                    <span className="text-sm text-muted-foreground">
                       Schedule interviews
                     </span>
                   </div>
@@ -183,7 +183,7 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-6 text-gray-500">
+              <div className="text-center py-6 text-muted-foreground">
                 <p className="text-sm">No recent activity</p>
                 <p className="text-xs mt-1">
                   Start exploring to see your activity here
