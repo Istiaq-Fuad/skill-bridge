@@ -93,8 +93,13 @@ class ApiClient {
   }
 
   private getAuthHeader(): Record<string, string> {
+    // Check if we're in a browser environment
+    if (typeof window === "undefined") {
+      return {};
+    }
+
     const token = localStorage.getItem("token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return token && token.trim() ? { Authorization: `Bearer ${token}` } : {};
   }
 
   private async request<T>(

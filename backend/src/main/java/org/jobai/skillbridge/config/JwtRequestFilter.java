@@ -1,6 +1,7 @@
 package org.jobai.skillbridge.config;
 
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,7 +28,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private JwtUtil jwtUtil;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws ServletException, IOException {
         final String authorizationHeader = request.getHeader("Authorization");
 
         String username = null;
@@ -35,12 +37,20 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7);
-            try {
-                username = jwtUtil.getUsernameFromToken(jwt);
-            } catch (IllegalArgumentException e) {
-                System.out.println("Unable to get JWT Token");
-            } catch (ExpiredJwtException e) {
-                System.out.println("JWT Token has expired");
+
+            // Check if JWT token is not empty or just whitespace
+            if (jwt != null && jwt.trim().length() > 0) {
+                try {
+                    username = jwtUtil.getUsernameFromToken(jwt);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Unable to get JWT Token: " + e.getMessage());
+                } catch (ExpiredJwtException e) {
+                    System.out.println("JWT Token has expired: " + e.getMessage());
+                } catch (MalformedJwtException e) {
+                    System.out.println("Malformed JWT Token: " + e.getMessage());
+                } catch (Exception e) {
+                    System.out.println("JWT Token parsing error: " + e.getMessage());
+                }
             }
         }
 
