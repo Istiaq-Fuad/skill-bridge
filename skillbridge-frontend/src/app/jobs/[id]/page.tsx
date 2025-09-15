@@ -152,7 +152,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
                 <CardTitle className="text-2xl lg:text-3xl mb-3">
                   {job.title}
                 </CardTitle>
-                <div className="flex flex-wrap items-center gap-4 text-gray-600">
+                <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
                   <div className="flex items-center">
                     <Building className="h-5 w-5 mr-2" />
                     <span className="font-medium">{job.company}</span>
@@ -269,7 +269,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
               </CardHeader>
               <CardContent>
                 <div className="prose max-w-none">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-card-foreground leading-relaxed whitespace-pre-wrap">
                     {job.description}
                   </p>
                 </div>
@@ -287,7 +287,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
                     {job.requirements.map((requirement, index) => (
                       <div key={index} className="flex items-start">
                         <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                        <span className="text-gray-700">{requirement}</span>
+                        <span className="text-card-foreground">{requirement}</span>
                       </div>
                     ))}
                   </div>
@@ -305,32 +305,32 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <dt className="text-sm font-medium text-gray-500 mb-1">
+                  <dt className="text-sm font-medium text-muted-foreground mb-1">
                     Company
                   </dt>
-                  <dd className="text-sm text-gray-900">{job.company}</dd>
+                  <dd className="text-sm text-foreground">{job.company}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-500 mb-1">
+                  <dt className="text-sm font-medium text-muted-foreground mb-1">
                     Location
                   </dt>
-                  <dd className="text-sm text-gray-900">{job.location}</dd>
+                  <dd className="text-sm text-foreground">{job.location}</dd>
                 </div>
                 {job.salary && (
                   <div>
-                    <dt className="text-sm font-medium text-gray-500 mb-1">
+                    <dt className="text-sm font-medium text-muted-foreground mb-1">
                       Salary
                     </dt>
-                    <dd className="text-sm text-gray-900">
+                    <dd className="text-sm text-foreground">
                       ${job.salary.toLocaleString()}/year
                     </dd>
                   </div>
                 )}
                 <div>
-                  <dt className="text-sm font-medium text-gray-500 mb-1">
+                  <dt className="text-sm font-medium text-muted-foreground mb-1">
                     Posted
                   </dt>
-                  <dd className="text-sm text-gray-900">
+                  <dd className="text-sm text-foreground">
                     {new Date(job.createdAt).toLocaleDateString()}
                   </dd>
                 </div>
@@ -365,7 +365,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
                 <CardTitle>Similar Jobs</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-6 text-gray-500">
+                <div className="text-center py-6 text-muted-foreground">
                   <p className="text-sm">No similar jobs found</p>
                 </div>
               </CardContent>

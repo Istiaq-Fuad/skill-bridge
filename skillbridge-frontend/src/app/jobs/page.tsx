@@ -93,8 +93,8 @@ export default function JobsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Jobs</h1>
-            <p className="text-gray-600">
+            <h1 className="text-2xl font-bold text-foreground">Jobs</h1>
+            <p className="text-muted-foreground">
               {user.role === "JOB_SEEKER"
                 ? "Find your next opportunity"
                 : "Manage your job postings"}
@@ -123,7 +123,7 @@ export default function JobsPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Job title, keywords, or company"
                     value={searchTerm}
@@ -135,7 +135,7 @@ export default function JobsPage() {
               </div>
               <div className="flex-1">
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Location"
                     value={locationFilter}
@@ -183,13 +183,13 @@ export default function JobsPage() {
           ) : jobs.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Search className="h-6 w-6 text-gray-400" />
+                <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Search className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-medium text-foreground mb-2">
                   No jobs found
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Try adjusting your search criteria or check back later for new
                   opportunities.
                 </p>
@@ -214,7 +214,7 @@ export default function JobsPage() {
                           {job.title}
                         </Link>
                       </CardTitle>
-                      <div className="flex items-center text-gray-600 space-x-4 text-sm">
+                      <div className="flex items-center text-muted-foreground space-x-4 text-sm">
                         <div className="flex items-center">
                           <Building className="h-4 w-4 mr-1" />
                           {job.company}
@@ -232,7 +232,7 @@ export default function JobsPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="flex items-center text-sm text-gray-500 mb-2">
+                      <div className="flex items-center text-sm text-muted-foreground mb-2">
                         <Calendar className="h-4 w-4 mr-1" />
                         {new Date(job.createdAt).toLocaleDateString()}
                       </div>

@@ -151,12 +151,12 @@ export default function ApplicationsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-foreground">
               {user.role === "JOB_SEEKER"
                 ? "My Applications"
                 : "Job Applications"}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {user.role === "JOB_SEEKER"
                 ? "Track your job applications and their status"
                 : "Manage applications for your job postings"}
@@ -185,13 +185,13 @@ export default function ApplicationsPage() {
           <CardContent>
             {filteredApplications.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Building className="h-6 w-6 text-gray-400" />
+                <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Building className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-medium text-foreground mb-2">
                   No applications found
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   {user.role === "JOB_SEEKER"
                     ? "You haven't applied to any jobs yet."
                     : "No applications received yet."}
@@ -231,19 +231,19 @@ export default function ApplicationsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center">
-                          <Building className="h-4 w-4 mr-2 text-gray-400" />
+                          <Building className="h-4 w-4 mr-2 text-muted-foreground" />
                           {application.job?.company || "N/A"}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center">
-                          <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                          <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                           {application.job?.location || "N/A"}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
                           {new Date(application.appliedAt).toLocaleDateString()}
                         </div>
                       </TableCell>
@@ -303,7 +303,7 @@ export default function ApplicationsPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   Total Applications
                 </CardTitle>
               </CardHeader>
@@ -314,7 +314,7 @@ export default function ApplicationsPage() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   Pending Review
                 </CardTitle>
               </CardHeader>
@@ -330,7 +330,7 @@ export default function ApplicationsPage() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   Accepted
                 </CardTitle>
               </CardHeader>
@@ -346,7 +346,7 @@ export default function ApplicationsPage() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   Rejected
                 </CardTitle>
               </CardHeader>

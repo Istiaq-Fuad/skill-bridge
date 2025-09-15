@@ -29,13 +29,13 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <div className="container mx-auto px-4 py-16">
         <div className="text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+          <h1 className="text-5xl font-bold text-foreground mb-6">
             Welcome to <span className="text-primary">SkillBridge</span>
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Connect talent with opportunity. Whether you&apos;re looking for
             your next career move or searching for the perfect candidate,
             SkillBridge makes it happen.
@@ -56,7 +56,7 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-card rounded-lg shadow-md p-6 border">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <svg
                   className="w-6 h-6 text-primary"
@@ -72,13 +72,15 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-2">For Job Seekers</h3>
-              <p className="text-gray-600">
+              <h3 className="text-lg font-semibold mb-2 text-card-foreground">
+                For Job Seekers
+              </h3>
+              <p className="text-muted-foreground">
                 Find your dream job with our powerful search and matching tools.
               </p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-card rounded-lg shadow-md p-6 border">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <svg
                   className="w-6 h-6 text-primary"
@@ -94,13 +96,15 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-2">For Employers</h3>
-              <p className="text-gray-600">
+              <h3 className="text-lg font-semibold mb-2 text-card-foreground">
+                For Employers
+              </h3>
+              <p className="text-muted-foreground">
                 Post jobs and find the perfect candidates for your team.
               </p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-card rounded-lg shadow-md p-6 border">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <svg
                   className="w-6 h-6 text-primary"
@@ -116,8 +120,10 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-2">Fast & Easy</h3>
-              <p className="text-gray-600">
+              <h3 className="text-lg font-semibold mb-2 text-card-foreground">
+                Fast & Easy
+              </h3>
+              <p className="text-muted-foreground">
                 Streamlined application process with real-time updates and
                 notifications.
               </p>

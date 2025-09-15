@@ -170,7 +170,7 @@ export default function ProfilePage() {
                     ? `${user.firstName} ${user.lastName}`
                     : user.username}
                 </h1>
-                <p className="text-gray-600">{user.email}</p>
+                <p className="text-muted-foreground">{user.email}</p>
                 <Badge variant="secondary">
                   {user.role === "JOB_SEEKER" ? "Job Seeker" : "Employer"}
                 </Badge>
@@ -305,7 +305,7 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 {profile.skills.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-muted-foreground text-center py-8">
                     No skills added yet
                   </p>
                 ) : (
@@ -349,7 +349,7 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 {profile.education.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-muted-foreground text-center py-8">
                     No education added yet
                   </p>
                 ) : (
@@ -359,11 +359,13 @@ export default function ProfilePage() {
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <h3 className="font-semibold">{edu.degree}</h3>
-                            <p className="text-gray-600">{edu.institution}</p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-muted-foreground">
+                              {edu.institution}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
                               {edu.fieldOfStudy}
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-muted-foreground">
                               {edu.startDate} - {edu.endDate || "Present"}
                             </p>
                             {edu.description && (
@@ -403,7 +405,7 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 {profile.experience.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-muted-foreground text-center py-8">
                     No experience added yet
                   </p>
                 ) : (
@@ -413,8 +415,10 @@ export default function ProfilePage() {
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <h3 className="font-semibold">{exp.position}</h3>
-                            <p className="text-gray-600">{exp.company}</p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-muted-foreground">
+                              {exp.company}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
                               {exp.startDate} -{" "}
                               {exp.current ? "Present" : exp.endDate}
                             </p>
@@ -455,7 +459,7 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 {profile.portfolio.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-muted-foreground text-center py-8">
                     No portfolio items added yet
                   </p>
                 ) : (
@@ -477,7 +481,7 @@ export default function ProfilePage() {
                             </Button>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600 mb-3">
+                        <p className="text-sm text-muted-foreground mb-3">
                           {item.description}
                         </p>
                         {item.url && (
