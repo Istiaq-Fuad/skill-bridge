@@ -93,6 +93,37 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<User> getCurrentUserProfile(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        return ResponseEntity.ok(user);
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<User> updateCurrentUserProfile(@RequestBody User userDetails, Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+
+        // Update only non-null fields
+        if (userDetails.getUsername() != null) {
+            currentUser.setUsername(userDetails.getUsername());
+        }
+        if (userDetails.getEmail() != null) {
+            currentUser.setEmail(userDetails.getEmail());
+        }
+        if (userDetails.getFirstName() != null) {
+            currentUser.setFirstName(userDetails.getFirstName());
+        }
+        if (userDetails.getLastName() != null) {
+            currentUser.setLastName(userDetails.getLastName());
+        }
+        if (userDetails.getBio() != null) {
+            currentUser.setBio(userDetails.getBio());
+        }
+
+        User updatedUser = userService.saveUser(currentUser);
+        return ResponseEntity.ok(updatedUser);
+    }
+
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
         // Check if username or email already exists

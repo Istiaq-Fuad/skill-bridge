@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, useJobs } from "@/hooks";
+import { useJobsStore } from "@/stores";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Job, apiClient } from "@/lib/api";
 import {
   Search,
   MapPin,
@@ -24,49 +24,31 @@ import {
   Calendar,
   Plus,
 } from "lucide-react";
-import { toast } from "sonner";
+
 import Link from "next/link";
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const { jobs, isLoading: jobsLoading, error, fetchJobs } = useJobs();
+  const { setSearchFilters } = useJobsStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!authLoading && !user) {
       router.push("/login");
       return;
     }
-    if (user) {
-      fetchJobs();
-    }
-  }, [user, isLoading, router]);
-
-  const fetchJobs = async (search?: string, location?: string) => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getJobs({
-        search: search || undefined,
-        location: location || undefined,
-      });
-
-      if (response.success && response.data) {
-        setJobs(response.data);
-      } else {
-        toast.error("Failed to fetch jobs");
-      }
-    } catch {
-      toast.error("Error fetching jobs");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [user, authLoading, router]);
 
   const handleSearch = () => {
-    fetchJobs(searchTerm, locationFilter);
+    const filters = {
+      search: searchTerm || undefined,
+      location: locationFilter || undefined,
+    };
+    setSearchFilters(filters);
+    fetchJobs(filters);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -75,7 +57,7 @@ export default function JobsPage() {
     }
   };
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -154,7 +136,23 @@ export default function JobsPage() {
 
         {/* Results */}
         <div className="space-y-4">
-          {loading ? (
+          {error && (
+            <Card>
+              <CardContent className="text-center py-12">
+                <div className="w-12 h-12 bg-destructive/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Search className="h-6 w-6 text-destructive" />
+                </div>
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  Error loading jobs
+                </h3>
+                <p className="text-muted-foreground mb-4">{error}</p>
+                <Button onClick={() => fetchJobs()} variant="outline">
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {!error && jobsLoading ? (
             // Loading skeletons
             Array.from({ length: 5 }).map((_, i) => (
               <Card key={i}>
@@ -180,7 +178,7 @@ export default function JobsPage() {
                 </CardContent>
               </Card>
             ))
-          ) : jobs.length === 0 ? (
+          ) : !error && jobs.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
                 <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center mx-auto mb-4">

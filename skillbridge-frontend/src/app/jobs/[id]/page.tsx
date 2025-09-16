@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks";
+import { useJob, useApplyForJob } from "@/hooks/api";
+import { useJobsStore } from "@/stores";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +20,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Job, apiClient } from "@/lib/api";
 import {
   ArrowLeft,
   Building,
@@ -32,63 +33,48 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 interface JobDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function JobDetailPage({ params }: JobDetailPageProps) {
-  const [job, setJob] = useState<Job | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [applying, setApplying] = useState(false);
+  const resolvedParams = use(params);
   const [applied, setApplied] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [showApplicationDialog, setShowApplicationDialog] = useState(false);
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const { job } = useJob(parseInt(resolvedParams.id));
+  const { applyForJob } = useApplyForJob();
+  const { isLoading: jobLoading, error: jobError } = useJobsStore();
   const router = useRouter();
 
-  const fetchJob = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getJob(parseInt(params.id));
-
-      if (response.success && response.data) {
-        setJob(response.data);
-      } else {
-        toast.error("Job not found");
-        router.push("/jobs");
-      }
-    } catch {
-      toast.error("Error fetching job details");
-      router.push("/jobs");
-    } finally {
-      setLoading(false);
-    }
-  }, [params.id, router]);
-
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!authLoading && !user) {
       router.push("/login");
       return;
     }
-    if (user && params.id) {
-      fetchJob();
-      // TODO: Check if user has already applied
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (jobError) {
+      toast.error("Error fetching job details");
+      router.push("/jobs");
     }
-  }, [user, isLoading, router, params.id, fetchJob]);
+  }, [jobError, router]);
 
   const handleApply = async () => {
     if (!job) return;
 
     try {
       setApplying(true);
-      const response = await apiClient.applyForJob(job.id);
-
-      if (response.success) {
+      const result = await applyForJob(job.id);
+      if (result.success) {
         setApplied(true);
         setShowApplicationDialog(false);
         toast.success("Application submitted successfully!");
       } else {
-        toast.error(response.error || "Failed to submit application");
+        toast.error(result.error || "Failed to submit application");
       }
     } catch {
       toast.error("Error submitting application");
@@ -97,7 +83,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
     }
   };
 
-  if (isLoading || loading) {
+  if (authLoading || jobLoading) {
     return (
       <DashboardLayout>
         <div className="space-y-6">
@@ -287,7 +273,9 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
                     {job.requirements.map((requirement, index) => (
                       <div key={index} className="flex items-start">
                         <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                        <span className="text-card-foreground">{requirement}</span>
+                        <span className="text-card-foreground">
+                          {requirement}
+                        </span>
                       </div>
                     ))}
                   </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks";
+import { useUserApplications, useUpdateApplicationStatus } from "@/hooks/api";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,68 +24,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { JobApplication, apiClient } from "@/lib/api";
+import { JobApplication } from "@/lib/api";
 import { Calendar, Building, MapPin, Eye, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
 export default function ApplicationsPage() {
-  const [applications, setApplications] = useState<JobApplication[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const { user, isLoading } = useAuth();
+  const {
+    userApplications: applications,
+    isLoading: loading,
+    refreshUserApplications,
+  } = useUserApplications(user?.id || 0);
+  const { updateApplicationStatus } = useUpdateApplicationStatus();
   const router = useRouter();
-
-  const fetchApplications = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      const response =
-        user.role === "JOB_SEEKER"
-          ? await apiClient.getUserApplications(user.id)
-          : await apiClient.getJobApplications(0); // This would need to be updated for specific job
-
-      if (response.success && response.data) {
-        setApplications(response.data);
-      } else {
-        toast.error("Failed to fetch applications");
-      }
-    } catch {
-      toast.error("Error fetching applications");
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/login");
       return;
     }
-    if (user) {
-      fetchApplications();
-    }
-  }, [user, isLoading, router, fetchApplications]);
+  }, [user, isLoading, router]);
 
   const handleStatusUpdate = async (
     applicationId: number,
     newStatus: JobApplication["status"]
   ) => {
     try {
-      const response = await apiClient.updateApplicationStatus(
-        applicationId,
-        newStatus
-      );
-      if (response.success) {
-        setApplications((prev) =>
-          prev.map((app) =>
-            app.id === applicationId ? { ...app, status: newStatus } : app
-          )
-        );
+      const result = await updateApplicationStatus(applicationId, newStatus);
+      if (result.success) {
         toast.success("Application status updated");
+        // Refresh the applications to show the updated status
+        refreshUserApplications();
       } else {
-        toast.error("Failed to update status");
+        toast.error(result.error || "Failed to update status");
       }
     } catch {
       toast.error("Error updating status");

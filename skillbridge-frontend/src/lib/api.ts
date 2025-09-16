@@ -113,6 +113,13 @@ class ApiClient {
           ...this.getAuthHeader(),
           ...options.headers,
         },
+        // Next.js caching best practices
+        next: {
+          revalidate: options.method === "GET" ? 300 : 0, // Cache GET requests for 5 minutes
+          tags: [endpoint.split("/")[1] || "api"], // Tag for cache invalidation
+        },
+        // Don't cache mutations
+        cache: options.method === "GET" ? "force-cache" : "no-store",
         ...options,
       });
 
