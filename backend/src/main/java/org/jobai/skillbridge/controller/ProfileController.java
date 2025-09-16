@@ -24,14 +24,16 @@ public class ProfileController {
     @GetMapping("/education")
     public ResponseEntity<List<Education>> getUserEducations(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        return ResponseEntity.ok(profileService.getUserEducations(user));
+        List<Education> educations = profileService.getUserEducations(user);
+        return ResponseEntity.ok(educations);
     }
     
     @PostMapping("/education")
     public ResponseEntity<Education> addEducation(@RequestBody Education education, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         education.setUser(user);
-        return ResponseEntity.ok(profileService.saveEducation(education));
+        Education savedEducation = profileService.saveEducation(education);
+        return ResponseEntity.ok(savedEducation);
     }
     
     @PutMapping("/education/{id}")
@@ -39,7 +41,8 @@ public class ProfileController {
         User user = (User) authentication.getPrincipal();
         education.setId(id);
         education.setUser(user);
-        return ResponseEntity.ok(profileService.saveEducation(education));
+        Education savedEducation = profileService.saveEducation(education);
+        return ResponseEntity.ok(savedEducation);
     }
     
     @DeleteMapping("/education/{id}")
@@ -52,14 +55,16 @@ public class ProfileController {
     @GetMapping("/experience")
     public ResponseEntity<List<Experience>> getUserExperiences(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        return ResponseEntity.ok(profileService.getUserExperiences(user));
+        List<Experience> experiences = profileService.getUserExperiences(user);
+        return ResponseEntity.ok(experiences);
     }
     
     @PostMapping("/experience")
     public ResponseEntity<Experience> addExperience(@RequestBody Experience experience, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         experience.setUser(user);
-        return ResponseEntity.ok(profileService.saveExperience(experience));
+        Experience savedExperience = profileService.saveExperience(experience);
+        return ResponseEntity.ok(savedExperience);
     }
     
     @PutMapping("/experience/{id}")
@@ -67,7 +72,8 @@ public class ProfileController {
         User user = (User) authentication.getPrincipal();
         experience.setId(id);
         experience.setUser(user);
-        return ResponseEntity.ok(profileService.saveExperience(experience));
+        Experience savedExperience = profileService.saveExperience(experience);
+        return ResponseEntity.ok(savedExperience);
     }
     
     @DeleteMapping("/experience/{id}")
@@ -80,14 +86,16 @@ public class ProfileController {
     @GetMapping("/skills")
     public ResponseEntity<List<Skill>> getUserSkills(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        return ResponseEntity.ok(profileService.getUserSkills(user));
+        List<Skill> skills = profileService.getUserSkills(user);
+        return ResponseEntity.ok(skills);
     }
     
     @PostMapping("/skills")
     public ResponseEntity<Skill> addSkill(@RequestBody Skill skill, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         skill.setUser(user);
-        return ResponseEntity.ok(profileService.saveSkill(skill));
+        Skill savedSkill = profileService.saveSkill(skill);
+        return ResponseEntity.ok(savedSkill);
     }
     
     @PutMapping("/skills/{id}")
@@ -95,7 +103,8 @@ public class ProfileController {
         User user = (User) authentication.getPrincipal();
         skill.setId(id);
         skill.setUser(user);
-        return ResponseEntity.ok(profileService.saveSkill(skill));
+        Skill savedSkill = profileService.saveSkill(skill);
+        return ResponseEntity.ok(savedSkill);
     }
     
     @DeleteMapping("/skills/{id}")
@@ -108,14 +117,16 @@ public class ProfileController {
     @GetMapping("/portfolio")
     public ResponseEntity<List<Portfolio>> getUserPortfolios(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        return ResponseEntity.ok(profileService.getUserPortfolios(user));
+        List<Portfolio> portfolios = profileService.getUserPortfolios(user);
+        return ResponseEntity.ok(portfolios);
     }
     
     @PostMapping("/portfolio")
     public ResponseEntity<Portfolio> addPortfolio(@RequestBody Portfolio portfolio, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         portfolio.setUser(user);
-        return ResponseEntity.ok(profileService.savePortfolio(portfolio));
+        Portfolio savedPortfolio = profileService.savePortfolio(portfolio);
+        return ResponseEntity.ok(savedPortfolio);
     }
     
     @PutMapping("/portfolio/{id}")
@@ -123,7 +134,8 @@ public class ProfileController {
         User user = (User) authentication.getPrincipal();
         portfolio.setId(id);
         portfolio.setUser(user);
-        return ResponseEntity.ok(profileService.savePortfolio(portfolio));
+        Portfolio savedPortfolio = profileService.savePortfolio(portfolio);
+        return ResponseEntity.ok(savedPortfolio);
     }
     
     @DeleteMapping("/portfolio/{id}")

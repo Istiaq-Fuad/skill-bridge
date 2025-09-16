@@ -47,13 +47,17 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody User user) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
 
-        final UserDetails userDetails = userService.loadUserByUsername(user.getUsername());
-        final String jwt = jwtUtil.generateToken((User) userDetails);
+            final UserDetails userDetails = userService.loadUserByUsername(user.getUsername());
+            final String jwt = jwtUtil.generateToken((User) userDetails);
 
-        return ResponseEntity.ok(jwt);
+            return ResponseEntity.ok(jwt);
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body("Authentication failed: " + e.getMessage());
+        }
     }
     
     @GetMapping
@@ -73,51 +77,5 @@ public class UserController {
         Optional<User> user = userService.getUserByUsername(username);
         return user.map(ResponseEntity::ok)
                   .orElse(ResponseEntity.notFound().build());
-    }
-    
-    @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        // Check if username or email already exists
-        if (userService.existsByUsername(user.getUsername())) {
-            return ResponseEntity.badRequest().build();
-        }
-        if (userService.existsByEmail(user.getEmail())) {
-            return ResponseEntity.badRequest().build();
-        }
-        
-        User savedUser = userService.saveUser(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
-    }
-    
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
-        Optional<User> optionalUser = userService.getUserById(id);
-        if (optionalUser.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        User user = optionalUser.get();
-        user.setUsername(userDetails.getUsername());
-        user.setEmail(userDetails.getEmail());
-        user.setPassword(userDetails.getPassword());
-        user.setRole(userDetails.getRole());
-        user.setFirstName(userDetails.getFirstName());
-        user.setLastName(userDetails.getLastName());
-        user.setBio(userDetails.getBio());
-        user.setActive(userDetails.isActive());
-        
-        User updatedUser = userService.saveUser(user);
-        return ResponseEntity.ok(updatedUser);
-    }
-    
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        Optional<User> user = userService.getUserById(id);
-        if (user.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        userService.deleteUser(id);
-        return ResponseEntity.noContent().build();
     }
 }
