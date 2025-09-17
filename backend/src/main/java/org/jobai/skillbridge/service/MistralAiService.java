@@ -247,9 +247,7 @@ public class MistralAiService {
         
         prompt.append("Use professional terminology appropriate for the field. ");
         prompt.append("Structure the resume with clear section headings and consistent formatting. ");
-        prompt.append("Ensure the resume is ATS (Applicant Tracking System) friendly.
-
-");
+        prompt.append("Ensure the resume is ATS (Applicant Tracking System) friendly.");
         
         // Format-specific instructions
         switch (resumeFormat) {
@@ -273,56 +271,40 @@ public class MistralAiService {
         if (jobTitle != null && !jobTitle.isEmpty()) {
             prompt.append(jobTitle).append(" based on the following profile. ");
             prompt.append("Tailor the resume to highlight skills and experiences most relevant to this role. ");
-            prompt.append("Incorporate industry-specific keywords and terminology for ").append(jobTitle).append(".
-
-");
+            prompt.append("Incorporate industry-specific keywords and terminology for ").append(jobTitle).append(".");
         } else {
-            prompt.append("professional based on the following profile:
-
-");
+            prompt.append("professional based on the following profile");
         }
         
         // Format context data into readable prompt
         Map<String, Object> personalInfo = (Map<String, Object>) context.get("personal_info");
         if (personalInfo != null) {
-            prompt.append("Name: ").append(personalInfo.get("name")).append("
-");
-            prompt.append("Email: ").append(personalInfo.get("email")).append("
-");
+            prompt.append("Name: ").append(personalInfo.get("name")).append("");
+            prompt.append("Email: ").append(personalInfo.get("email")).append("");
             if (personalInfo.get("phone") != null) {
-                prompt.append("Phone: ").append(personalInfo.get("phone")).append("
-");
+                prompt.append("Phone: ").append(personalInfo.get("phone")).append("");
             }
             if (personalInfo.get("address") != null) {
-                prompt.append("Address: ").append(personalInfo.get("address")).append("
-");
+                prompt.append("Address: ").append(personalInfo.get("address")).append("");
             }
             prompt.append("Location: ").append(personalInfo.get("city")).append(", ")
-                  .append(personalInfo.get("country")).append("
-
-");
+                  .append(personalInfo.get("country")).append("");
         }
         
         // Add bio/professional summary if available, or create one
         if (personalInfo != null && personalInfo.get("bio") != null && !personalInfo.get("bio").toString().trim().isEmpty()) {
-            prompt.append("Professional Summary:
-").append(personalInfo.get("bio")).append("
-
-");
+            prompt.append("Professional Summary").append(personalInfo.get("bio")).append("");
         } else {
-            prompt.append("Professional Summary:
-");
+            prompt.append("Professional Summary");
             prompt.append("Write a compelling 2-3 sentence professional summary that highlights the candidate's key strengths, ");
-            prompt.append("years of experience, and career goals. Tailor it to the ").append(jobTitle != null ? jobTitle : "professional").append(" role.
-
-");
+            prompt.append("years of experience, and career goals. Tailor it to the ").append(jobTitle != null ? jobTitle : "professional").append(" role");
         }
         
         // Add skills section with more details and professional formatting
-        prompt.append("Skills:
-");
-        prompt.append("Organize skills into relevant categories. For each skill, include proficiency level if provided.
-");
+        prompt.append("Skills:");
+
+        prompt.append("Organize skills into relevant categories. For each skill, include proficiency level if provided.");
+
         List<Map<String, Object>> skills = (List<Map<String, Object>>) context.get("skills");
         if (skills != null && !skills.isEmpty()) {
             // Group skills by category if available
@@ -334,8 +316,7 @@ public class MistralAiService {
             }
             
             for (Map.Entry<String, List<Map<String, Object>>> entry : skillsByCategory.entrySet()) {
-                prompt.append(entry.getKey()).append(":
-");
+                prompt.append(entry.getKey()).append("");
                 List<String> skillNames = new ArrayList<>();
                 for (Map<String, Object> skill : entry.getValue()) {
                     StringBuilder skillEntry = new StringBuilder("- ").append(skill.get("name"));
@@ -345,30 +326,21 @@ public class MistralAiService {
                     }
                     skillNames.add(skillEntry.toString());
                 }
-                prompt.append(String.join("
-", skillNames)).append("
-
-");
+                prompt.append(String.join("", skillNames)).append("");
             }
         } else {
-            prompt.append("No specific skills provided. Include relevant skills for the ").append(jobTitle != null ? jobTitle : "professional").append(" role.
-
-");
+            prompt.append("No specific skills provided. Include relevant skills for the ").append(jobTitle != null ? jobTitle : "professional").append(" role.");
         }
         
         // Add education with more details and professional formatting
-        prompt.append("Education:
-");
-        prompt.append("List educational qualifications in reverse chronological order. Include institution, degree, field of study, and dates.
-");
+        prompt.append("Education");
+        prompt.append("List educational qualifications in reverse chronological order. Include institution, degree, field of study, and dates.");
         List<Map<String, Object>> educations = (List<Map<String, Object>>) context.get("education");
         if (educations != null && !educations.isEmpty()) {
             for (Map<String, Object> edu : educations) {
                 prompt.append("- ").append(edu.get("degree")).append(" in ")
-                      .append(edu.get("field_of_study")).append("
-");
-                prompt.append("  ").append(edu.get("institution")).append("
-");
+                      .append(edu.get("field_of_study")).append("");
+                prompt.append("  ").append(edu.get("institution")).append("");
                 Object startDate = edu.get("start_date");
                 Object endDate = edu.get("end_date");
                 if (startDate != null || endDate != null) {
@@ -379,42 +351,32 @@ public class MistralAiService {
                     } else {
                         prompt.append(" - Present");
                     }
-                    prompt.append("
-");
+                    prompt.append("");
                 }
                 Object grade = edu.get("grade");
                 if (grade != null && !grade.toString().trim().isEmpty()) {
-                    prompt.append("  Grade: ").append(grade).append("
-");
+                    prompt.append("  Grade: ").append(grade).append("");
                 }
                 Object description = edu.get("description");
                 if (description != null && !description.toString().trim().isEmpty()) {
-                    prompt.append("  ").append(description).append("
-");
+                    prompt.append("  ").append(description).append("");
                 }
-                prompt.append("
-");
+                prompt.append("");
             }
         } else {
-            prompt.append("No formal education history provided. Include relevant educational qualifications.
-
-");
+            prompt.append("No formal education history provided. Include relevant educational qualifications.");
         }
         
         // Add experience with more details and achievement-focused formatting
-        prompt.append("Work Experience:
-");
+        prompt.append("Work Experience:");
         prompt.append("List work experience in reverse chronological order. For each position, include company name, job title, and dates. ");
         prompt.append("Use bullet points to highlight key achievements with quantifiable results where possible. ");
-        prompt.append("Start each bullet point with a strong action verb.
-");
+        prompt.append("Start each bullet point with a strong action verb.");
         List<Map<String, Object>> experiences = (List<Map<String, Object>>) context.get("experience");
         if (experiences != null && !experiences.isEmpty()) {
             for (Map<String, Object> exp : experiences) {
-                prompt.append("- ").append(exp.get("position")).append("
-");
-                prompt.append("  ").append(exp.get("company")).append("
-");
+                prompt.append("- ").append(exp.get("position")).append("");
+                prompt.append("  ").append(exp.get("company")).append("");
                 Object startDate = exp.get("start_date");
                 Object endDate = exp.get("end_date");
                 Object currentlyWorking = exp.get("currently_working");
@@ -426,194 +388,128 @@ public class MistralAiService {
                     } else if (endDate != null) {
                         prompt.append(" - ").append(formatDate(endDate.toString()));
                     }
-                    prompt.append("
-");
+                    prompt.append("");
                 }
                 Object description = exp.get("description");
                 if (description != null && !description.toString().trim().isEmpty()) {
                     // Try to parse description as achievements if it contains bullet points or numbered lists
                     String descStr = description.toString().trim();
-                    if (descStr.contains("
-") || descStr.contains(";") || descStr.contains("-")) {
-                        prompt.append("  Key Achievements:
-");
+                    if (descStr.contains("") || descStr.contains(";") || descStr.contains("-")) {
+                        prompt.append("  Key Achievements:");
                         // Format as bullet points if not already formatted
                         if (!descStr.contains("-") && !descStr.contains("*")) {
-                            String[] achievements = descStr.contains(";") ? descStr.split(";") : descStr.split("
-");
+                            String[] achievements = descStr.contains(";") ? descStr.split(";") : descStr.split("");
                             for (String achievement : achievements) {
                                 if (!achievement.trim().isEmpty()) {
-                                    prompt.append("  - ").append(achievement.trim()).append("
-");
+                                    prompt.append("  - ").append(achievement.trim()).append("");
                                 }
                             }
                         } else {
-                            prompt.append("  ").append(descStr).append("
-");
+                            prompt.append("  ").append(descStr).append("");
                         }
                     } else {
-                        prompt.append("  Key Achievements:
-");
-                        prompt.append("  - ").append(descStr).append("
-");
+                        prompt.append("  Key Achievements:");
+                        prompt.append("  - ").append(descStr).append("");
                     }
                 } else {
-                    prompt.append("  Key Achievements:
-");
-                    prompt.append("  - [Include 3-5 quantifiable achievements with specific results]
-");
+                    prompt.append("  Key Achievements");
+                    prompt.append("  - [Include 3-5 quantifiable achievements with specific results]");
                 }
-                prompt.append("
-");
+                prompt.append("");
             }
         } else {
-            prompt.append("No formal work experience provided. Include relevant professional experience or projects.
-
-");
+            prompt.append("No formal work experience provided. Include relevant professional experience or projects.");
         }
         
         // Add portfolio if available
         List<Map<String, Object>> portfolios = (List<Map<String, Object>>) context.get("portfolio");
         if (portfolios != null && !portfolios.isEmpty()) {
-            prompt.append("Portfolio:
-");
-            prompt.append("List relevant projects, publications, or work samples that demonstrate expertise.
-");
+            prompt.append("Portfolio:");
+            prompt.append("List relevant projects, publications, or work samples that demonstrate expertise");
             for (Map<String, Object> portfolio : portfolios) {
-                prompt.append("- ").append(portfolio.get("title")).append("
-");
+                prompt.append("- ").append(portfolio.get("title")).append("");
                 Object description = portfolio.get("description");
                 if (description != null && !description.toString().trim().isEmpty()) {
-                    prompt.append("  ").append(description).append("
-");
+                    prompt.append("  ").append(description).append("");
                 }
                 Object url = portfolio.get("url");
                 if (url != null && !url.toString().trim().isEmpty()) {
-                    prompt.append("  URL: ").append(url).append("
-");
+                    prompt.append("  URL: ").append(url).append("");
                 }
-                prompt.append("
-");
+                prompt.append("");
             }
         }
         
-        // Format-specific closing instructions with professional guidelines
-        prompt.append("
-
-Please structure this as a professional resume with the following guidelines:
-");
-        switch (resumeFormat) {
+        prompt.append("\n\nPlease structure this as a professional resume with the following guidelines:\n");
+        String resumeFormatValue = resumeFormat != null ? resumeFormat.toLowerCase() : "chronological";
+        switch (resumeFormatValue) {
             case "functional":
-                prompt.append("- Start with a professional summary
-");
-                prompt.append("- Follow with a detailed skills section organized by category
-");
-                prompt.append("- Include key achievements grouped by skill area
-");
-                prompt.append("- End with a brief chronological work history
-");
-                prompt.append("- Keep to 1-2 pages maximum
-");
+                prompt.append("- Start with a professional summary\n");
+                prompt.append("- Follow with a detailed skills section organized by category\n");
+                prompt.append("- Include key achievements grouped by skill area\n");
+                prompt.append("- End with a brief chronological work history\n");
+                prompt.append("- Keep to 1-2 pages maximum\n");
                 break;
             case "hybrid":
-                prompt.append("- Start with a professional summary
-");
-                prompt.append("- Follow with a skills section highlighting core competencies
-");
-                prompt.append("- Detail work experience in reverse chronological order with achievements
-");
-                prompt.append("- Include education and additional relevant sections
-");
-                prompt.append("- Keep to 1-2 pages maximum
-");
+                prompt.append("- Start with a professional summary\n");
+                prompt.append("- Follow with a skills section highlighting core competencies\n");
+                prompt.append("- Detail work experience in reverse chronological order with achievements\n");
+                prompt.append("- Include education and additional relevant sections\n");
+                prompt.append("- Keep to 1-2 pages maximum\n");
                 break;
             case "chronological":
             default:
-                prompt.append("- Start with a professional summary
-");
-                prompt.append("- Detail work experience first in reverse chronological order
-");
-                prompt.append("- Highlight achievements with quantifiable results
-");
-                prompt.append("- Follow with education and skills sections
-");
-                prompt.append("- Keep to 1-2 pages maximum
-");
+                prompt.append("- Start with a professional summary\n");
+                prompt.append("- Detail work experience first in reverse chronological order\n");
+                prompt.append("- Highlight achievements with quantifiable results\n");
+                prompt.append("- Follow with education and skills sections\n");
+                prompt.append("- Keep to 1-2 pages maximum\n");
                 break;
         }
-        
+
         // Template-specific formatting instructions
-        switch (resumeTemplate) {
+        switch (resumeTemplate != null ? resumeTemplate.toLowerCase() : "professional") {
             case "executive":
-                prompt.append("- Emphasize leadership roles and team management
-");
-                prompt.append("- Highlight budget responsibilities and financial results
-");
-                prompt.append("- Include strategic initiatives and business impact
-");
-                prompt.append("- Use executive-level language and terminology
-");
+                prompt.append("- Emphasize leadership roles and team management\n");
+                prompt.append("- Highlight budget responsibilities and financial results\n");
+                prompt.append("- Include strategic initiatives and business impact\n");
+                prompt.append("- Use executive-level language and terminology\n");
                 break;
             case "creative":
-                prompt.append("- Emphasize portfolio pieces and creative projects
-");
-                prompt.append("- Include visual or design-related achievements
-");
-                prompt.append("- Highlight innovative problem-solving approaches
-");
-                prompt.append("- Use creative industry terminology
-");
+                prompt.append("- Emphasize portfolio pieces and creative projects\n");
+                prompt.append("- Include visual or design-related achievements\n");
+                prompt.append("- Highlight innovative problem-solving approaches\n");
+                prompt.append("- Use creative industry terminology\n");
                 break;
             case "academic":
-                prompt.append("- Emphasize research projects and publications
-");
-                prompt.append("- Include teaching experience and academic contributions
-");
-                prompt.append("- Highlight educational achievements and honors
-");
-                prompt.append("- Use academic terminology and formatting
-");
+                prompt.append("- Emphasize research projects and publications\n");
+                prompt.append("- Include teaching experience and academic contributions\n");
+                prompt.append("- Highlight educational achievements and honors\n");
+                prompt.append("- Use academic terminology and formatting\n");
                 break;
             case "technical":
-                prompt.append("- Emphasize technical skills and certifications
-");
-                prompt.append("- Include specific technologies and programming languages
-");
-                prompt.append("- Highlight technical projects and system implementations
-");
-                prompt.append("- Use technical terminology and acronyms
-");
+                prompt.append("- Emphasize technical skills and certifications\n");
+                prompt.append("- Include specific technologies and programming languages\n");
+                prompt.append("- Highlight technical projects and system implementations\n");
+                prompt.append("- Use technical terminology and acronyms\n");
                 break;
             case "professional":
             default:
-                prompt.append("- Use standard professional formatting
-");
-                prompt.append("- Emphasize achievements with quantifiable results
-");
-                prompt.append("- Include relevant industry terminology
-");
+                prompt.append("- Use standard professional formatting\n");
+                prompt.append("- Emphasize achievements with quantifiable results\n");
+                prompt.append("- Include relevant industry terminology\n");
                 break;
         }
         
-        prompt.append("- Use clear section headings in ALL CAPS or bold formatting
-");
-        prompt.append("- Use bullet points for achievements and responsibilities
-");
-        prompt.append("- Start each bullet point with a strong action verb (Managed, Developed, Implemented, etc.)
-");
-        prompt.append("- Include quantifiable results where possible (Increased sales by 25%, Managed a team of 10, etc.)
-");
-        prompt.append("- Use consistent date formatting (Month YYYY - Month YYYY)
-");
-        prompt.append("- Maintain a professional tone throughout
-");
-        prompt.append("- Format the resume in clean, readable text without any markdown or special formatting
-");
-        prompt.append("- Ensure the resume is ATS-friendly with standard section headings
-");
-        prompt.append("- Tailor the content to the ").append(jobTitle != null ? jobTitle : "professional").append(" role
-
-");
+prompt.append("- Use clear section headings in ALL CAPS or bold formatting\n");
+prompt.append("- Use bullet points for achievements and responsibilities\n");
+prompt.append("- Start each bullet point with a strong action verb (Managed, Developed, Implemented, etc.)\n");
+prompt.append("- Include quantifiable results where possible (Increased sales by 25%, Managed a team of 10, etc.)\n");
+prompt.append("- Use consistent date formatting (Month YYYY - Month YYYY)\n");
+prompt.append("- Maintain a professional tone throughout\n");
+prompt.append("- Format the resume in clean, readable text without any markdown or special formatting\n");
+prompt.append("- Ensure the resume is ATS-friendly with standard section headings\n");
+prompt.append("- Tailor the content to the ").append(jobTitle != null ? jobTitle : "professional").append(" role\n");
         
         prompt.append("Final Output: Provide only the resume content without any additional explanations or comments.");
         
