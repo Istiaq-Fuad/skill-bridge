@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { useAuthStore } from "@/stores";
 
 // Compatibility hook to match the original AuthContext interface
@@ -15,17 +14,14 @@ export function useAuth() {
   const logout = useAuthStore((state) => state.logout);
   const updateUser = useAuthStore((state) => state.updateUser);
 
-  // Memoize the return object to prevent infinite re-renders
-  return useCallback(
-    () => ({
-      user,
-      token,
-      isLoading,
-      login,
-      register,
-      logout,
-      updateUser,
-    }),
-    [user, token, isLoading, login, register, logout, updateUser]
-  )();
+  // Return the object directly - Zustand already handles memoization
+  return {
+    user,
+    token,
+    isLoading,
+    login,
+    register,
+    logout,
+    updateUser,
+  };
 }

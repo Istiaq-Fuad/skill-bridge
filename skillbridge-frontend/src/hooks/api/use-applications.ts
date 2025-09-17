@@ -3,6 +3,7 @@
 import { useCallback, useEffect } from "react";
 import { apiClient } from "@/lib/api";
 import { useApplicationsStore } from "@/stores";
+import { createStandardError } from "@/lib/error-handler";
 
 export function useApplications() {
   const { applications, isLoading, error, setLoading, setError } =
@@ -34,55 +35,76 @@ export function useApplications() {
 }
 
 export function useUserApplications(userId: number) {
-  const {
-    userApplications,
-    isLoading,
-    error,
-    setUserApplications,
-    setLoading,
-    setError,
-  } = useApplicationsStore();
+  const { userApplications, isLoading, error } = useApplicationsStore();
 
-  const fetchUserApplications = useCallback(
-    async (id: number) => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchUserApplications = useCallback(async (id: number) => {
+    try {
+      const { setLoading, setError, setUserApplications } =
+        useApplicationsStore.getState();
+      setLoading(true);
+      setError(null);
 
-        const response = await apiClient.getUserApplications(id);
+      const response = await apiClient.getUserApplications(id);
 
-        if (response.success && response.data) {
-          setUserApplications(response.data);
-          return response.data;
-        } else {
-          setError(response.error || "Failed to fetch user applications");
-          return [];
-        }
-      } catch (error) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch user applications"
-        );
+      if (response.success && response.data) {
+        setUserApplications(response.data, id);
+        return response.data;
+      } else {
+        setError(response.error || "Failed to fetch user applications");
         return [];
-      } finally {
-        setLoading(false);
       }
-    },
-    [setUserApplications, setLoading, setError]
-  );
+    } catch (error) {
+      const standardError = createStandardError(error, "fetchUserApplications");
+      const { setError } = useApplicationsStore.getState();
+      setError(standardError.message);
+      return [];
+    } finally {
+      const { setLoading } = useApplicationsStore.getState();
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (userId && userApplications.length === 0 && !isLoading && !error) {
-      fetchUserApplications(userId);
+    // Only fetch if we have a valid userId
+    if (userId && userId > 0) {
+      const { isLoading, isUserDataFresh } = useApplicationsStore.getState();
+
+      // Don't fetch if already loading or data is fresh
+      if (isLoading || isUserDataFresh(userId)) {
+        return;
+      }
+
+      const fetchData = async () => {
+        try {
+          const { setLoading, setError, setUserApplications } =
+            useApplicationsStore.getState();
+          setLoading(true);
+          setError(null);
+
+          const response = await apiClient.getUserApplications(userId);
+
+          if (response.success && response.data) {
+            setUserApplications(response.data, userId);
+          } else {
+            setError(response.error || "Failed to fetch user applications");
+          }
+        } catch (error) {
+          const standardError = createStandardError(
+            error,
+            "fetchUserApplications"
+          );
+          const { setError, setLoading } = useApplicationsStore.getState();
+          setError(standardError.message);
+          setLoading(false);
+        } finally {
+          const { setLoading } = useApplicationsStore.getState();
+          setLoading(false);
+        }
+      };
+
+      fetchData();
     }
-  }, [
-    userId,
-    userApplications.length,
-    isLoading,
-    error,
-    fetchUserApplications,
-  ]);
+  }, [userId]);
 
   const refreshUserApplications = useCallback(() => {
     return fetchUserApplications(userId);
@@ -98,49 +120,76 @@ export function useUserApplications(userId: number) {
 }
 
 export function useJobApplications(jobId: number) {
-  const {
-    jobApplications,
-    isLoading,
-    error,
-    setJobApplications,
-    setLoading,
-    setError,
-  } = useApplicationsStore();
+  const { jobApplications, isLoading, error } = useApplicationsStore();
 
-  const fetchJobApplications = useCallback(
-    async (id: number) => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchJobApplications = useCallback(async (id: number) => {
+    try {
+      const { setLoading, setError, setJobApplications } =
+        useApplicationsStore.getState();
+      setLoading(true);
+      setError(null);
 
-        const response = await apiClient.getJobApplications(id);
+      const response = await apiClient.getJobApplications(id);
 
-        if (response.success && response.data) {
-          setJobApplications(response.data);
-          return response.data;
-        } else {
-          setError(response.error || "Failed to fetch job applications");
-          return [];
-        }
-      } catch (error) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch job applications"
-        );
+      if (response.success && response.data) {
+        setJobApplications(response.data, id);
+        return response.data;
+      } else {
+        setError(response.error || "Failed to fetch job applications");
         return [];
-      } finally {
-        setLoading(false);
       }
-    },
-    [setJobApplications, setLoading, setError]
-  );
+    } catch (error) {
+      const standardError = createStandardError(error, "fetchJobApplications");
+      const { setError } = useApplicationsStore.getState();
+      setError(standardError.message);
+      return [];
+    } finally {
+      const { setLoading } = useApplicationsStore.getState();
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (jobId && jobApplications.length === 0 && !isLoading && !error) {
-      fetchJobApplications(jobId);
+    // Only fetch if we have a valid jobId
+    if (jobId && jobId > 0) {
+      const { isLoading, isJobDataFresh } = useApplicationsStore.getState();
+
+      // Don't fetch if already loading or data is fresh
+      if (isLoading || isJobDataFresh(jobId)) {
+        return;
+      }
+
+      const fetchData = async () => {
+        try {
+          const { setLoading, setError, setJobApplications } =
+            useApplicationsStore.getState();
+          setLoading(true);
+          setError(null);
+
+          const response = await apiClient.getJobApplications(jobId);
+
+          if (response.success && response.data) {
+            setJobApplications(response.data, jobId);
+          } else {
+            setError(response.error || "Failed to fetch job applications");
+          }
+        } catch (error) {
+          const standardError = createStandardError(
+            error,
+            "fetchJobApplications"
+          );
+          const { setError, setLoading } = useApplicationsStore.getState();
+          setError(standardError.message);
+          setLoading(false);
+        } finally {
+          const { setLoading } = useApplicationsStore.getState();
+          setLoading(false);
+        }
+      };
+
+      fetchData();
     }
-  }, [jobId, jobApplications.length, isLoading, error, fetchJobApplications]);
+  }, [jobId]);
 
   const refreshJobApplications = useCallback(() => {
     return fetchJobApplications(jobId);
@@ -174,10 +223,9 @@ export function useApplyForJob() {
           return { success: false, error: response.error };
         }
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to apply for job";
-        setError(errorMessage);
-        return { success: false, error: errorMessage };
+        const standardError = createStandardError(error, "applyForJob");
+        setError(standardError.message);
+        return { success: false, error: standardError.message };
       } finally {
         setLoading(false);
       }

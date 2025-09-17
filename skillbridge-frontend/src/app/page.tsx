@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { testApiClient } from "@/lib/api-test";
 
 export default function Home() {
   const { user, isLoading } = useAuth();
@@ -41,7 +42,7 @@ export default function Home() {
             SkillBridge makes it happen.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Button asChild size="lg" className="text-lg px-8 py-3">
               <Link href="/register">Get Started</Link>
             </Button>
@@ -52,6 +53,26 @@ export default function Home() {
               className="text-lg px-8 py-3"
             >
               <Link href="/login">Sign In</Link>
+            </Button>
+          </div>
+
+          {/* API Test Button */}
+          <div className="flex justify-center mb-16">
+            <Button
+              onClick={async () => {
+                const result = await testApiClient();
+                alert(
+                  `API Test Results:\nJobs Working: ${
+                    result.jobsWorking
+                  }\nAuth Required: ${result.authRequired}\nError: ${
+                    result.error || "None"
+                  }`
+                );
+              }}
+              variant="secondary"
+              size="sm"
+            >
+              Test API Connection
             </Button>
           </div>
 

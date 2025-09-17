@@ -9,12 +9,16 @@ interface ApplicationsState {
   jobApplications: JobApplication[];
   isLoading: boolean;
   error: string | null;
+  loadedUserId: number | null; // Track which user's data has been loaded
+  loadedJobId: number | null; // Track which job's data has been loaded
+  lastUserFetchTime: number | null; // Track when user data was last fetched
+  lastJobFetchTime: number | null; // Track when job data was last fetched
 }
 
 interface ApplicationsActions {
   setApplications: (applications: JobApplication[]) => void;
-  setUserApplications: (applications: JobApplication[]) => void;
-  setJobApplications: (applications: JobApplication[]) => void;
+  setUserApplications: (applications: JobApplication[], userId: number) => void;
+  setJobApplications: (applications: JobApplication[], jobId: number) => void;
   addApplication: (application: JobApplication) => void;
   updateApplicationStatus: (
     applicationId: number,
@@ -24,6 +28,8 @@ interface ApplicationsActions {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearApplications: () => void;
+  isUserDataFresh: (userId: number) => boolean;
+  isJobDataFresh: (jobId: number) => boolean;
 }
 
 type ApplicationsStore = ApplicationsState & ApplicationsActions;
@@ -35,18 +41,32 @@ export const useApplicationsStore = create<ApplicationsStore>((set, get) => ({
   jobApplications: [],
   isLoading: false,
   error: null,
+  loadedUserId: null,
+  loadedJobId: null,
+  lastUserFetchTime: null,
+  lastJobFetchTime: null,
 
   // Actions
   setApplications: (applications: JobApplication[]) => {
     set({ applications, error: null });
   },
 
-  setUserApplications: (applications: JobApplication[]) => {
-    set({ userApplications: applications, error: null });
+  setUserApplications: (applications: JobApplication[], userId: number) => {
+    set({
+      userApplications: applications,
+      error: null,
+      loadedUserId: userId,
+      lastUserFetchTime: Date.now(),
+    });
   },
 
-  setJobApplications: (applications: JobApplication[]) => {
-    set({ jobApplications: applications, error: null });
+  setJobApplications: (applications: JobApplication[], jobId: number) => {
+    set({
+      jobApplications: applications,
+      error: null,
+      loadedJobId: jobId,
+      lastJobFetchTime: Date.now(),
+    });
   },
 
   addApplication: (application: JobApplication) => {
@@ -101,6 +121,32 @@ export const useApplicationsStore = create<ApplicationsStore>((set, get) => ({
       userApplications: [],
       jobApplications: [],
       error: null,
+      loadedUserId: null,
+      loadedJobId: null,
+      lastUserFetchTime: null,
+      lastJobFetchTime: null,
     });
+  },
+
+  isUserDataFresh: (userId: number) => {
+    const { loadedUserId, lastUserFetchTime } = get();
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+    return (
+      loadedUserId === userId &&
+      lastUserFetchTime !== null &&
+      Date.now() - lastUserFetchTime < CACHE_DURATION
+    );
+  },
+
+  isJobDataFresh: (jobId: number) => {
+    const { loadedJobId, lastJobFetchTime } = get();
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+    return (
+      loadedJobId === jobId &&
+      lastJobFetchTime !== null &&
+      Date.now() - lastJobFetchTime < CACHE_DURATION
+    );
   },
 }));

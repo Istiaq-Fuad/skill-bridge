@@ -1,7 +1,9 @@
 package org.jobai.skillbridge.controller;
 
+import org.jobai.skillbridge.model.JobApplication;
 import org.jobai.skillbridge.model.JobPost;
 import org.jobai.skillbridge.model.User;
+import org.jobai.skillbridge.service.ApplicationService;
 import org.jobai.skillbridge.service.JobService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,9 @@ import java.util.List;
 public class JobController {
     @Autowired
     public JobService service;
+
+    @Autowired
+    private ApplicationService applicationService;
 
     @GetMapping
     public ResponseEntity<List<JobPost>> getAllJobs(
@@ -91,5 +96,37 @@ public class JobController {
     @GetMapping("/keyword/{keyword}")
     public List<JobPost> getJobsByKeyword(@PathVariable("keyword") String keyword) {
         return service.searchJobsByKeyword(keyword);
+    }
+
+    @GetMapping("/my-jobs")
+    public ResponseEntity<List<JobPost>> getMyJobs(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+
+        // Only allow employers to see their jobs
+        if (!"EMPLOYER".equals(user.getRole().name())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        List<JobPost> jobs = service.getJobsByEmployerId(user.getId().intValue());
+        return ResponseEntity.ok(jobs);
+    }
+
+    @GetMapping("/{id}/applications")
+    public ResponseEntity<List<JobApplication>> getJobApplications(@PathVariable Integer id,
+            Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        JobPost job = service.getJob(id);
+
+        if (job == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Only allow job creator to see applications
+        if (!job.getEmployerId().equals(user.getId().intValue())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        List<JobApplication> applications = applicationService.getJobApplications(job);
+        return ResponseEntity.ok(applications);
     }
 }

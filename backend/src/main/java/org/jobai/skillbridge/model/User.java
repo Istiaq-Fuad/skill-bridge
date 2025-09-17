@@ -1,6 +1,9 @@
 package org.jobai.skillbridge.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,52 +14,66 @@ import java.util.List;
 
 @Entity
 @Table(name = "users")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(unique = true)
     private String username;
-    
+
     @Column(unique = true)
     private String email;
-    
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
-    
+
     @Enumerated(EnumType.STRING)
     private UserRole role;
-    
+
     private String firstName;
     private String lastName;
-    
+
     @Column(length = 1000)
     private String bio;
-    
+
     private String phoneNumber;
     private String address;
     private String city;
     private String country;
-    
+
+    // Employer-specific fields
+    private String companyName;
+    @Column(length = 2000)
+    private String companyDescription;
+    private String companyWebsite;
+    private String companyLocation;
+    private String contactPhone;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Education> educations;
-    
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Experience> experiences;
-    
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Skill> skills;
-    
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Portfolio> portfolios;
-    
+
     private boolean isActive = true;
 
     public User() {
     }
 
-    public User(Long id, String username, String email, String password, UserRole role, 
-                String firstName, String lastName, String bio, boolean isActive) {
+    public User(Long id, String username, String email, String password, UserRole role,
+            String firstName, String lastName, String bio, boolean isActive) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -229,5 +246,46 @@ public class User implements UserDetails {
 
     public void setActive(boolean active) {
         isActive = active;
+    }
+
+    // Employer-specific getters and setters
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+
+    public String getCompanyDescription() {
+        return companyDescription;
+    }
+
+    public void setCompanyDescription(String companyDescription) {
+        this.companyDescription = companyDescription;
+    }
+
+    public String getCompanyWebsite() {
+        return companyWebsite;
+    }
+
+    public void setCompanyWebsite(String companyWebsite) {
+        this.companyWebsite = companyWebsite;
+    }
+
+    public String getCompanyLocation() {
+        return companyLocation;
+    }
+
+    public void setCompanyLocation(String companyLocation) {
+        this.companyLocation = companyLocation;
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
+    public void setContactPhone(String contactPhone) {
+        this.contactPhone = contactPhone;
     }
 }

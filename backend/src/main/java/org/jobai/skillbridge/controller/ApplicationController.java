@@ -91,4 +91,26 @@ public class ApplicationController {
         }
         return ResponseEntity.ok(applicationService.getJobApplications(jobPost));
     }
+
+    @GetMapping("/job/{jobId}/detailed")
+    public ResponseEntity<List<JobApplication>> getJobApplicationsWithDetails(@PathVariable Integer jobId,
+            Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+        JobPost jobPost = jobService.getJob(jobId);
+
+        if (jobPost == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Only allow employers to see detailed applications for their own jobs
+        if (!"EMPLOYER".equals(currentUser.getRole().name()) ||
+                !jobPost.getEmployerId().equals(currentUser.getId().intValue())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        List<JobApplication> applications = applicationService.getJobApplications(jobPost);
+        // The applications should already include user details from the database
+        // relationships
+        return ResponseEntity.ok(applications);
+    }
 }

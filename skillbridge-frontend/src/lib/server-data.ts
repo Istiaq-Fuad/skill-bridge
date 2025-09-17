@@ -1,5 +1,17 @@
 import { notFound } from "next/navigation";
-import { apiClient } from "./api";
+import { createServerApiClient } from "./api";
+import { cookies } from "next/headers";
+
+// Helper to get auth token from cookies for server-side requests
+async function getServerToken(): Promise<string | undefined> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get("token")?.value;
+  } catch {
+    // In case cookies() is not available in all contexts
+    return undefined;
+  }
+}
 
 // Server-side data fetching functions for Next.js App Router
 // These follow Next.js best practices for caching and error handling
@@ -10,6 +22,8 @@ export async function getJobs(filters?: {
   company?: string;
 }) {
   try {
+    const token = await getServerToken();
+    const apiClient = createServerApiClient(token);
     const response = await apiClient.getJobs(filters);
     if (response.success && response.data) {
       return response.data;
@@ -23,6 +37,8 @@ export async function getJobs(filters?: {
 
 export async function getJob(id: number) {
   try {
+    const token = await getServerToken();
+    const apiClient = createServerApiClient(token);
     const response = await apiClient.getJob(id);
     if (response.success && response.data) {
       return response.data;
@@ -36,6 +52,8 @@ export async function getJob(id: number) {
 
 export async function getUserProfile(userId: number) {
   try {
+    const token = await getServerToken();
+    const apiClient = createServerApiClient(token);
     const response = await apiClient.getUserProfile(userId);
     if (response.success && response.data) {
       return response.data;
@@ -49,6 +67,8 @@ export async function getUserProfile(userId: number) {
 
 export async function getUserApplications(userId: number) {
   try {
+    const token = await getServerToken();
+    const apiClient = createServerApiClient(token);
     const response = await apiClient.getUserApplications(userId);
     if (response.success && response.data) {
       return response.data;
@@ -62,6 +82,8 @@ export async function getUserApplications(userId: number) {
 
 export async function getJobApplications(jobId: number) {
   try {
+    const token = await getServerToken();
+    const apiClient = createServerApiClient(token);
     const response = await apiClient.getJobApplications(jobId);
     if (response.success && response.data) {
       return response.data;

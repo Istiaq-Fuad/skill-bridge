@@ -1,6 +1,7 @@
 package org.jobai.skillbridge.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,20 +17,22 @@ public class JobApplication {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_post_id")
+    @JsonIgnore
     private JobPost jobPost;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
+    @JsonIgnore
     private User user;
-    
+
     private LocalDateTime appliedAt;
     private String status; // APPLIED, REVIEWED, INTERVIEW, REJECTED, ACCEPTED
-    
+
     @Column(length = 1000)
     private String coverLetter;
-    
+
     private String resumeUrl;
 }

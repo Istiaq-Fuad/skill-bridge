@@ -1,10 +1,19 @@
-"use client";
-
 import { cache } from "react";
-import { apiClient } from "@/lib/api";
+import { createServerApiClient } from "@/lib/api";
+import { cookies } from "next/headers";
 
 // Server-side cache functions for Next.js App Router
 // These functions use React's cache function for deduplication
+
+// Helper to get auth token from cookies
+async function getServerToken(): Promise<string | undefined> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get("token")?.value;
+  } catch {
+    return undefined;
+  }
+}
 
 export const getCachedJobs = cache(
   async (filters?: {
@@ -12,6 +21,8 @@ export const getCachedJobs = cache(
     location?: string;
     company?: string;
   }) => {
+    const token = await getServerToken();
+    const apiClient = createServerApiClient(token);
     const response = await apiClient.getJobs(filters);
     if (response.success && response.data) {
       return response.data;
@@ -21,6 +32,8 @@ export const getCachedJobs = cache(
 );
 
 export const getCachedJob = cache(async (id: number) => {
+  const token = await getServerToken();
+  const apiClient = createServerApiClient(token);
   const response = await apiClient.getJob(id);
   if (response.success && response.data) {
     return response.data;
@@ -29,6 +42,8 @@ export const getCachedJob = cache(async (id: number) => {
 });
 
 export const getCachedUserProfile = cache(async (userId: number) => {
+  const token = await getServerToken();
+  const apiClient = createServerApiClient(token);
   const response = await apiClient.getUserProfile(userId);
   if (response.success && response.data) {
     return response.data;
@@ -37,6 +52,8 @@ export const getCachedUserProfile = cache(async (userId: number) => {
 });
 
 export const getCachedUserApplications = cache(async (userId: number) => {
+  const token = await getServerToken();
+  const apiClient = createServerApiClient(token);
   const response = await apiClient.getUserApplications(userId);
   if (response.success && response.data) {
     return response.data;
@@ -45,6 +62,8 @@ export const getCachedUserApplications = cache(async (userId: number) => {
 });
 
 export const getCachedJobApplications = cache(async (jobId: number) => {
+  const token = await getServerToken();
+  const apiClient = createServerApiClient(token);
   const response = await apiClient.getJobApplications(jobId);
   if (response.success && response.data) {
     return response.data;
@@ -53,6 +72,8 @@ export const getCachedJobApplications = cache(async (jobId: number) => {
 });
 
 export const getCachedProfile = cache(async () => {
+  const token = await getServerToken();
+  const apiClient = createServerApiClient(token);
   const response = await apiClient.getProfile();
   if (response.success && response.data) {
     return response.data;
@@ -66,12 +87,14 @@ export const revalidateJobsCache = () => {
   // For now, we'll implement custom cache invalidation in hooks
 };
 
-export const revalidateUserCache = (_userId: number) => {
+export const revalidateUserCache = (userId: number) => {
   // Custom cache invalidation for user-specific data
+  console.log(`Invalidating cache for user ${userId}`);
 };
 
-export const revalidateJobCache = (_jobId: number) => {
+export const revalidateJobCache = (jobId: number) => {
   // Custom cache invalidation for job-specific data
+  console.log(`Invalidating cache for job ${jobId}`);
 };
 
 // Cache configuration constants

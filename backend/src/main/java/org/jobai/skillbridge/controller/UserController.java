@@ -1,6 +1,7 @@
 package org.jobai.skillbridge.controller;
 
-import org.jobai.skillbridge.model.LoginResponse;
+import org.jobai.skillbridge.dto.AuthResponse;
+import org.jobai.skillbridge.dto.UserDTO;
 import org.jobai.skillbridge.model.User;
 import org.jobai.skillbridge.service.UserService;
 import org.jobai.skillbridge.util.JwtUtil;
@@ -36,6 +37,15 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         try {
+            if (user.getUsername() == null || user.getUsername().isBlank()) {
+                return ResponseEntity.badRequest().body("Username is required");
+            }
+            if (user.getEmail() == null || user.getEmail().isBlank()) {
+                return ResponseEntity.badRequest().body("Email is required");
+            }
+            if (user.getPassword() == null || user.getPassword().isBlank()) {
+                return ResponseEntity.badRequest().body("Password is required");
+            }
             if (userService.existsByUsername(user.getUsername())) {
                 return ResponseEntity.badRequest().body("Username is already taken!");
             }
@@ -47,9 +57,7 @@ public class UserController {
 
             // Generate JWT token for the newly registered user
             final String jwt = jwtUtil.generateToken(savedUser);
-            LoginResponse response = new LoginResponse(jwt, savedUser);
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(new AuthResponse(jwt, UserDTO.fromEntity(savedUser)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
         }
@@ -58,17 +66,13 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody User user) {
         try {
-            Authentication authentication = authenticationManager.authenticate(
+            authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
 
             final UserDetails userDetails = userService.loadUserByUsername(user.getUsername());
             final String jwt = jwtUtil.generateToken((User) userDetails);
-
-            // Create response object with token and user data
             User userData = (User) userDetails;
-            LoginResponse response = new LoginResponse(jwt, userData);
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(new AuthResponse(jwt, UserDTO.fromEntity(userData)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Invalid username or password");
         }
@@ -118,6 +122,55 @@ public class UserController {
         }
         if (userDetails.getBio() != null) {
             currentUser.setBio(userDetails.getBio());
+        }
+
+        // Update employer-specific fields if user is an employer
+        if ("EMPLOYER".equals(currentUser.getRole().name())) {
+            if (userDetails.getCompanyName() != null) {
+                currentUser.setCompanyName(userDetails.getCompanyName());
+            }
+            if (userDetails.getCompanyDescription() != null) {
+                currentUser.setCompanyDescription(userDetails.getCompanyDescription());
+            }
+            if (userDetails.getCompanyWebsite() != null) {
+                currentUser.setCompanyWebsite(userDetails.getCompanyWebsite());
+            }
+            if (userDetails.getCompanyLocation() != null) {
+                currentUser.setCompanyLocation(userDetails.getCompanyLocation());
+            }
+            if (userDetails.getContactPhone() != null) {
+                currentUser.setContactPhone(userDetails.getContactPhone());
+            }
+        }
+
+        User updatedUser = userService.saveUser(currentUser);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @PutMapping("/profile/employer")
+    public ResponseEntity<User> updateEmployerProfile(@RequestBody User userDetails, Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+
+        // Verify user is an employer
+        if (!"EMPLOYER".equals(currentUser.getRole().name())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        // Update employer-specific fields
+        if (userDetails.getCompanyName() != null) {
+            currentUser.setCompanyName(userDetails.getCompanyName());
+        }
+        if (userDetails.getCompanyDescription() != null) {
+            currentUser.setCompanyDescription(userDetails.getCompanyDescription());
+        }
+        if (userDetails.getCompanyWebsite() != null) {
+            currentUser.setCompanyWebsite(userDetails.getCompanyWebsite());
+        }
+        if (userDetails.getCompanyLocation() != null) {
+            currentUser.setCompanyLocation(userDetails.getCompanyLocation());
+        }
+        if (userDetails.getContactPhone() != null) {
+            currentUser.setContactPhone(userDetails.getContactPhone());
         }
 
         User updatedUser = userService.saveUser(currentUser);

@@ -3,6 +3,7 @@
 import { useCallback, useEffect } from "react";
 import { apiClient } from "@/lib/api";
 import { useJobsStore } from "@/stores";
+import { createStandardError } from "@/lib/error-handler";
 
 export function useJobs() {
   const {
@@ -33,9 +34,8 @@ export function useJobs() {
           setError(response.error || "Failed to fetch jobs");
         }
       } catch (error) {
-        setError(
-          error instanceof Error ? error.message : "Failed to fetch jobs"
-        );
+        const standardError = createStandardError(error, "fetchJobs");
+        setError(standardError.message);
       } finally {
         setLoading(false);
       }
@@ -46,13 +46,6 @@ export function useJobs() {
   const refreshJobs = useCallback(() => {
     return fetchJobs(searchFilters);
   }, [fetchJobs, searchFilters]);
-
-  // Auto-fetch jobs on mount if not already loaded
-  useEffect(() => {
-    if (jobs.length === 0 && !isLoading && !error) {
-      fetchJobs();
-    }
-  }, [jobs.length, isLoading, error, fetchJobs]);
 
   return {
     jobs,
@@ -96,9 +89,31 @@ export function useJob(id: number) {
 
   useEffect(() => {
     if (id && (!currentJob || currentJob.id !== id)) {
-      fetchJob(id);
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+
+          const response = await apiClient.getJob(id);
+
+          if (response.success && response.data) {
+            setCurrentJob(response.data);
+          } else {
+            setError(response.error || "Failed to fetch job");
+          }
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Failed to fetch job";
+          setError(errorMessage);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
     }
-  }, [id, currentJob, fetchJob]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, currentJob]);
 
   return {
     job: currentJob,

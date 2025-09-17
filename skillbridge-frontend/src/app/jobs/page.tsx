@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, useJobs } from "@/hooks";
 import { useJobsStore } from "@/stores";
+import { useApiReady } from "@/hooks/use-api-ready";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,9 +31,11 @@ import Link from "next/link";
 export default function JobsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
+  const [hasInitiallyFetched, setHasInitiallyFetched] = useState(false);
   const { user, isLoading: authLoading } = useAuth();
   const { jobs, isLoading: jobsLoading, error, fetchJobs } = useJobs();
   const { setSearchFilters } = useJobsStore();
+  const { isReady: apiReady } = useApiReady(true); // Require auth for jobs
   const router = useRouter();
 
   useEffect(() => {
@@ -41,6 +44,27 @@ export default function JobsPage() {
       return;
     }
   }, [user, authLoading, router]);
+
+  // Initial fetch effect - wait for API to be ready
+  useEffect(() => {
+    if (
+      apiReady &&
+      !hasInitiallyFetched &&
+      jobs.length === 0 &&
+      !jobsLoading &&
+      !error
+    ) {
+      setHasInitiallyFetched(true);
+      fetchJobs();
+    }
+  }, [
+    apiReady,
+    hasInitiallyFetched,
+    jobs.length,
+    jobsLoading,
+    error,
+    fetchJobs,
+  ]);
 
   const handleSearch = () => {
     const filters = {

@@ -1,4 +1,6 @@
 // API configuration and utilities
+import { handleApiError } from "./error-handler";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
@@ -15,7 +17,12 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
-  role: "JOB_SEEKER" | "EMPLOYER";
+  role: "JOB_SEEKER" | "EMPLOYER" | "ADMIN";
+  companyName?: string;
+  companyDescription?: string;
+  companyWebsite?: string;
+  companyLocation?: string;
+  contactPhone?: string;
 }
 
 export interface Job {
@@ -36,8 +43,20 @@ export interface JobApplication {
   userId: number;
   status: "PENDING" | "REVIEWED" | "ACCEPTED" | "REJECTED";
   appliedAt: string;
+  coverLetter?: string;
+  resumeUrl?: string;
   job?: Job;
   user?: User;
+  profile?: Profile;
+}
+
+export interface EmployerDashboardStats {
+  totalJobs: number;
+  totalApplications: number;
+  pendingApplications: number;
+  activeJobs: number;
+  responseRate: number;
+  profileViews: number;
 }
 
 export interface Profile {
@@ -92,77 +111,101 @@ class ApiClient {
     this.baseUrl = API_BASE_URL;
   }
 
-  private getAuthHeader(): Record<string, string> {
-    // Check if we're in a browser environment
-    if (typeof window === "undefined") {
-      return {};
+  protected getAuthHeader(): Record<string, string> {
+    // Check if we're in a browser environment first
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token && token.trim()) {
+        return { Authorization: `Bearer ${token}` };
+      }
     }
 
-    const token = localStorage.getItem("token");
-    return token && token.trim() ? { Authorization: `Bearer ${token}` } : {};
+    // For server-side, we can't access localStorage
+    // Token should be passed explicitly for server-side calls
+    return {};
   }
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit & { token?: string } = {}
   ): Promise<ApiResponse<T>> {
     try {
+      // Handle token from options (for server-side) or get from localStorage (client-side)
+      const authHeaders = options.token
+        ? { Authorization: `Bearer ${options.token}` }
+        : this.getAuthHeader();
+
+      // Remove token from options before passing to fetch
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { token: _, ...fetchOptions } = options;
+
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
           "Content-Type": "application/json",
-          ...this.getAuthHeader(),
-          ...options.headers,
+          ...authHeaders,
+          ...fetchOptions.headers,
         },
-        // Next.js caching best practices
-        next: {
-          revalidate: options.method === "GET" ? 300 : 0, // Cache GET requests for 5 minutes
-          tags: [endpoint.split("/")[1] || "api"], // Tag for cache invalidation
-        },
-        // Don't cache mutations
-        cache: options.method === "GET" ? "force-cache" : "no-store",
-        ...options,
+        // Simplified caching - let the calling code handle caching strategy
+        cache: fetchOptions.method === "GET" ? "default" : "no-store",
+        ...fetchOptions,
       });
 
       // Check content type to determine how to parse the response
       const contentType = response.headers.get("content-type");
+      const isJson = contentType && contentType.includes("application/json");
 
       if (!response.ok) {
-        // Handle error responses
-        if (contentType && contentType.includes("application/json")) {
-          const errorData = await response.json();
-          return {
-            success: false,
-            error: errorData.message || "An error occurred",
-          };
-        } else {
-          // Handle plain text error responses
-          const textData = await response.text();
-          return {
-            success: false,
-            error: textData || "An error occurred",
-          };
+        let errorMessage = "An error occurred";
+
+        try {
+          if (isJson) {
+            const errorData = await response.json();
+            errorMessage =
+              errorData.message ||
+              errorData.error ||
+              `HTTP ${response.status}: ${response.statusText}`;
+          } else {
+            const textData = await response.text();
+            errorMessage =
+              textData || `HTTP ${response.status}: ${response.statusText}`;
+          }
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         }
+
+        return {
+          success: false,
+          error: errorMessage,
+        };
       }
 
       // Handle successful responses
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
+      try {
+        if (isJson) {
+          const data = await response.json();
+          return {
+            success: true,
+            data,
+          };
+        } else {
+          // Handle plain text responses (like JWT tokens)
+          const textData = await response.text();
+          return {
+            success: true,
+            data: textData as T,
+          };
+        }
+      } catch {
         return {
-          success: true,
-          data,
-        };
-      } else {
-        // Handle plain text responses (like JWT tokens)
-        const textData = await response.text();
-        return {
-          success: true,
-          data: textData as T,
+          success: false,
+          error: "Failed to parse response data",
         };
       }
     } catch (error) {
+      const errorInfo = handleApiError(error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Network error",
+        error: errorInfo.message,
       };
     }
   }
@@ -184,7 +227,7 @@ class ApiClient {
     password: string;
     firstName?: string;
     lastName?: string;
-    role: "JOB_SEEKER" | "EMPLOYER";
+    role: "JOB_SEEKER" | "EMPLOYER" | "ADMIN";
   }): Promise<ApiResponse<{ token: string; user: User }>> {
     return this.request("/users/register", {
       method: "POST",
@@ -399,6 +442,79 @@ class ApiClient {
       method: "DELETE",
     });
   }
+
+  // Employer-specific endpoints
+  async getEmployerJobs(employerId?: number): Promise<ApiResponse<Job[]>> {
+    const endpoint = employerId
+      ? `/jobs?employerId=${employerId}`
+      : "/jobs/my-jobs";
+    return this.request(endpoint);
+  }
+
+  async getEmployerDashboardStats(): Promise<
+    ApiResponse<EmployerDashboardStats>
+  > {
+    return this.request("/employers/dashboard-stats");
+  }
+
+  async getJobApplicationsWithDetails(
+    jobId: number
+  ): Promise<ApiResponse<JobApplication[]>> {
+    return this.request(`/applications/job/${jobId}/detailed`);
+  }
+
+  async updateEmployerProfile(profileData: {
+    companyName?: string;
+    companyDescription?: string;
+    companyWebsite?: string;
+    companyLocation?: string;
+    contactPhone?: string;
+  }): Promise<ApiResponse<User>> {
+    return this.request("/users/profile/employer", {
+      method: "PUT",
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  async getApplicationsByJob(
+    jobId: number
+  ): Promise<ApiResponse<JobApplication[]>> {
+    return this.request(`/jobs/${jobId}/applications`);
+  }
+
+  async bulkUpdateApplicationStatus(
+    updates: {
+      applicationId: number;
+      status: JobApplication["status"];
+    }[]
+  ): Promise<ApiResponse<JobApplication[]>> {
+    return this.request("/applications/bulk-status", {
+      method: "PUT",
+      body: JSON.stringify({ updates }),
+    });
+  }
 }
 
+// Client-side instance
 export const apiClient = new ApiClient();
+
+// Server-side API client factory
+export class ServerApiClient extends ApiClient {
+  private serverToken?: string;
+
+  constructor(token?: string) {
+    super();
+    this.serverToken = token;
+  }
+
+  protected getAuthHeader(): Record<string, string> {
+    return this.serverToken
+      ? { Authorization: `Bearer ${this.serverToken}` }
+      : {};
+  }
+}
+
+// Helper function to create server-side API client
+export function createServerApiClient(token?: string) {
+  return new ServerApiClient(token);
+}

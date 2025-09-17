@@ -46,4 +46,8 @@ public class JobService {
         }
         return results;
     }
+
+    public List<JobPost> getJobsByEmployerId(Integer employerId) {
+        return repo.findByEmployerId(employerId);
+    }
 }
