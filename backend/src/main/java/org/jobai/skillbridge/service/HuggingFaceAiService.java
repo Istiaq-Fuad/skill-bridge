@@ -2,16 +2,17 @@ package org.jobai.skillbridge.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jobai.skillbridge.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 @Service
 public class HuggingFaceAiService {
@@ -19,7 +20,7 @@ public class HuggingFaceAiService {
     @Value("${huggingface.api.token}")
     private String apiToken;
     
-    @Value("${huggingface.model.name:gpt2}")
+    @Value("${huggingface.model.name:google/flan-t5-small}")
     private String modelName;
     
     @Autowired
@@ -37,14 +38,19 @@ public class HuggingFaceAiService {
      * @return Generated resume content
      */
     public String generateResume(Long userId, String jobTitle) {
-        // Get structured context using MCP
-        Map<String, Object> context = mcpContextService.generateUserProfileContext(userId);
-        
-        // Create prompt for resume generation
-        String prompt = buildResumePrompt(context, jobTitle);
-        
-        // Call Hugging Face API
-        return callHuggingFaceApi(prompt);
+        try {
+            // Get structured context using MCP
+            Map<String, Object> context = mcpContextService.generateUserProfileContext(userId);
+            
+            // Create prompt for resume generation
+            String prompt = buildResumePrompt(context, jobTitle);
+            
+            // Call Hugging Face API
+            return callHuggingFaceApi(prompt);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error generating resume: " + e.getMessage();
+        }
     }
     
     /**
@@ -54,14 +60,19 @@ public class HuggingFaceAiService {
      * @return Optimized resume content
      */
     public String optimizeResumeForJob(Long userId, Integer jobId) {
-        // Get job-specific context using MCP
-        Map<String, Object> context = mcpContextService.generateJobOptimizationContext(userId, jobId);
-        
-        // Create prompt for job-specific optimization
-        String prompt = buildJobOptimizationPrompt(context, jobId);
-        
-        // Call Hugging Face API
-        return callHuggingFaceApi(prompt);
+        try {
+            // Get job-specific context using MCP
+            Map<String, Object> context = mcpContextService.generateJobOptimizationContext(userId, jobId);
+            
+            // Create prompt for job-specific optimization
+            String prompt = buildJobOptimizationPrompt(context, jobId);
+            
+            // Call Hugging Face API
+            return callHuggingFaceApi(prompt);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error optimizing resume: " + e.getMessage();
+        }
     }
     
     /**
@@ -153,38 +164,109 @@ public class HuggingFaceAiService {
      * @return Generated text response
      */
     private String callHuggingFaceApi(String prompt) {
+        System.out.println("Hugging Face API Token: " + apiToken);
         try {
+            // Validate API token
+            if (apiToken == null || apiToken.trim().isEmpty()) {
+                return "Error: Hugging Face API token is not configured. Please set HUGGINGFACE_API_TOKEN in your .env file.";
+            }
+            
+            // Validate model name
+            if (modelName == null || modelName.trim().isEmpty()) {
+                return "Error: Hugging Face model name is not configured.";
+            }
+            
             RestTemplate restTemplate = new RestTemplate();
+            
+            // Construct URL
+            String url = HUGGING_FACE_API_URL + modelName.trim();
+            System.out.println("Calling Hugging Face API at URL: " + url);
             
             // Set headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(apiToken);
+            headers.setBearerAuth(apiToken.trim());
             
-            // Create request body
-            String requestBody = "{\n" +
-                    "  \"inputs\": \"" + prompt.replace("\"", "\\\"") + "\",\n" +
-                    "  \"parameters\": {\n" +
-                    "    \"max_new_tokens\": 500,\n" +
-                    "    \"temperature\": 0.7\n" +
-                    "  }\n" +
-                    "}";
+            // Create request body - Simplified for Hugging Face API
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("inputs", prompt);
             
-            HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
+            // Add parameters
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("max_new_tokens", 200);
+            parameters.put("temperature", 0.7);
+            requestBody.put("parameters", parameters);
+            
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+            
+            System.out.println("Sending request to Hugging Face API with prompt length: " + prompt.length());
+            
+            System.out.println("Request body: " + new ObjectMapper().writeValueAsString(requestBody));
             
             // Make API call
-            String url = HUGGING_FACE_API_URL + modelName;
             ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
             
-            // Parse response
-            JsonNode root = objectMapper.readTree(response.getBody());
-            if (root.has("generated_text")) {
-                return root.get("generated_text").asText();
+            System.out.println("Received response from Hugging Face API with status: " + response.getStatusCode());
+            System.out.println("Response body: " + response.getBody());
+            
+            // Handle different response statuses
+            if (response.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return "Error: Model '" + modelName + "' not found. Please check the model name in your configuration.";
             }
             
-            return "Failed to generate resume. API Response: " + response.getBody();
+            if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                return "Error: Invalid Hugging Face API token. Please check your HUGGINGFACE_API_TOKEN in .env file.";
+            }
             
+            if (response.getStatusCode() == HttpStatus.FORBIDDEN) {
+                return "Error: Access forbidden to Hugging Face model '" + modelName + "'. This might be due to model permissions or rate limiting.";
+            }
+            
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                return "Error calling Hugging Face API. Status: " + response.getStatusCode() + ". Response: " + response.getBody();
+            }
+            
+            // Parse response
+            try {
+                JsonNode root = objectMapper.readTree(response.getBody());
+                
+                // Handle different response formats
+                if (root.isArray() && root.size() > 0) {
+                    JsonNode firstResult = root.get(0);
+                    if (firstResult.has("generated_text")) {
+                        return firstResult.get("generated_text").asText();
+                    }
+                } else if (root.has("generated_text")) {
+                    return root.get("generated_text").asText();
+                }
+                
+                // If we can't parse as JSON, return raw response
+                return response.getBody();
+                
+            } catch (Exception jsonParseError) {
+                // If JSON parsing fails, return the raw response
+                System.out.println("JSON parsing failed, returning raw response: " + response.getBody());
+                return response.getBody();
+            }
+            
+        } catch (HttpClientErrorException.NotFound e) {
+            System.err.println("404 Not Found error when calling Hugging Face API");
+            System.err.println("Model: " + modelName);
+            System.err.println("URL: " + HUGGING_FACE_API_URL + modelName.trim());
+            e.printStackTrace();
+            return "Error: Model '" + modelName + "' not found (404). Please check the model name in your configuration. Available models: google/flan-t5-small, distilgpt2, gpt2";
+        } catch (HttpClientErrorException.Unauthorized e) {
+            System.err.println("401 Unauthorized error when calling Hugging Face API");
+            System.err.println("Token: " + (apiToken != null ? "Provided" : "Not provided"));
+            e.printStackTrace();
+            return "Error: Invalid Hugging Face API token (401). Please check your HUGGINGFACE_API_TOKEN in .env file.";
+        } catch (HttpClientErrorException.Forbidden e) {
+            System.err.println("403 Forbidden error when calling Hugging Face API");
+            e.printStackTrace();
+            return "Error: Access forbidden to Hugging Face model '" + modelName + "' (403). This might be due to model permissions or rate limiting.";
         } catch (Exception e) {
+            System.err.println("General error when calling Hugging Face API");
+            e.printStackTrace();
             return "Error generating resume: " + e.getMessage();
         }
     }

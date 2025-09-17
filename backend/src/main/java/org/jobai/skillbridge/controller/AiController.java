@@ -63,8 +63,6 @@ public class AiController {
     public ResponseEntity<Object> getProfileContext(Authentication authentication) {
         try {
             User user = (User) authentication.getPrincipal();
-            Object context = aiService.getClass().getDeclaredMethod("generateResume", Long.class, String.class)
-                    .getDeclaringClass().getDeclaredMethod("generateResume", Long.class, String.class);
             // This is a placeholder - you'd need to expose the context service properly
             return ResponseEntity.ok("Context generation endpoint");
         } catch (Exception e) {
