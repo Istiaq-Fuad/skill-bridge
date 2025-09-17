@@ -3,6 +3,7 @@ package org.jobai.skillbridge.controller;
 import org.jobai.skillbridge.model.*;
 import org.jobai.skillbridge.service.ProfileService;
 import org.jobai.skillbridge.service.UserService;
+import org.jobai.skillbridge.util.ReflectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -31,7 +32,7 @@ public class ProfileController {
     @PostMapping("/education")
     public ResponseEntity<Education> addEducation(@RequestBody Education education, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        education.setUser(user);
+        ReflectionUtils.setFieldValue(education, "user", user);
         Education savedEducation = profileService.saveEducation(education);
         return ResponseEntity.ok(savedEducation);
     }
@@ -39,8 +40,8 @@ public class ProfileController {
     @PutMapping("/education/{id}")
     public ResponseEntity<Education> updateEducation(@PathVariable Long id, @RequestBody Education education, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        education.setId(id);
-        education.setUser(user);
+        ReflectionUtils.setFieldValue(education, "id", id);
+        ReflectionUtils.setFieldValue(education, "user", user);
         Education savedEducation = profileService.saveEducation(education);
         return ResponseEntity.ok(savedEducation);
     }
@@ -62,7 +63,7 @@ public class ProfileController {
     @PostMapping("/experience")
     public ResponseEntity<Experience> addExperience(@RequestBody Experience experience, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        experience.setUser(user);
+        ReflectionUtils.setFieldValue(experience, "user", user);
         Experience savedExperience = profileService.saveExperience(experience);
         return ResponseEntity.ok(savedExperience);
     }
@@ -70,8 +71,8 @@ public class ProfileController {
     @PutMapping("/experience/{id}")
     public ResponseEntity<Experience> updateExperience(@PathVariable Long id, @RequestBody Experience experience, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        experience.setId(id);
-        experience.setUser(user);
+        ReflectionUtils.setFieldValue(experience, "id", id);
+        ReflectionUtils.setFieldValue(experience, "user", user);
         Experience savedExperience = profileService.saveExperience(experience);
         return ResponseEntity.ok(savedExperience);
     }
@@ -93,7 +94,7 @@ public class ProfileController {
     @PostMapping("/skills")
     public ResponseEntity<Skill> addSkill(@RequestBody Skill skill, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        skill.setUser(user);
+        ReflectionUtils.setFieldValue(skill, "user", user);
         Skill savedSkill = profileService.saveSkill(skill);
         return ResponseEntity.ok(savedSkill);
     }
@@ -101,8 +102,8 @@ public class ProfileController {
     @PutMapping("/skills/{id}")
     public ResponseEntity<Skill> updateSkill(@PathVariable Long id, @RequestBody Skill skill, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        skill.setId(id);
-        skill.setUser(user);
+        ReflectionUtils.setFieldValue(skill, "id", id);
+        ReflectionUtils.setFieldValue(skill, "user", user);
         Skill savedSkill = profileService.saveSkill(skill);
         return ResponseEntity.ok(savedSkill);
     }
@@ -124,7 +125,7 @@ public class ProfileController {
     @PostMapping("/portfolio")
     public ResponseEntity<Portfolio> addPortfolio(@RequestBody Portfolio portfolio, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        portfolio.setUser(user);
+        ReflectionUtils.setFieldValue(portfolio, "user", user);
         Portfolio savedPortfolio = profileService.savePortfolio(portfolio);
         return ResponseEntity.ok(savedPortfolio);
     }
@@ -132,8 +133,8 @@ public class ProfileController {
     @PutMapping("/portfolio/{id}")
     public ResponseEntity<Portfolio> updatePortfolio(@PathVariable Long id, @RequestBody Portfolio portfolio, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
-        portfolio.setId(id);
-        portfolio.setUser(user);
+        ReflectionUtils.setFieldValue(portfolio, "id", id);
+        ReflectionUtils.setFieldValue(portfolio, "user", user);
         Portfolio savedPortfolio = profileService.savePortfolio(portfolio);
         return ResponseEntity.ok(savedPortfolio);
     }
