@@ -74,7 +74,7 @@ public class AiController {
     }
     
     /**
-     * Generate a skill assessment for the authenticated user
+     * Generate skill assessment for the authenticated user
      * @param skillName Optional specific skill to assess
      * @param authentication Authentication object containing user info
      * @return Generated skill assessment
@@ -86,7 +86,12 @@ public class AiController {
         
         try {
             User user = (User) authentication.getPrincipal();
-            AiResponseDto response = aiService.generateSkillAssessment(user.getId(), skillName);
+            // Create a prompt for skill assessment
+            String prompt = "Generate a skill assessment for user with ID " + user.getId();
+            if (skillName != null && !skillName.isEmpty()) {
+                prompt += " focusing on " + skillName;
+            }
+            AiResponseDto response = aiService.generateText(prompt, "skill-assessment");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             AiResponseDto errorResponse = new AiResponseDto(

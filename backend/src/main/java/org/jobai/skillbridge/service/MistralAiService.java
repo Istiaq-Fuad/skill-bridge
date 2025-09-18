@@ -1421,10 +1421,10 @@ prompt.append("Candidate Information:\n");
 
     
     /**
-     * Generate a skill assessment for a user
+     * Generate skill assessment for a user
      * @param userId The user ID
      * @param skillName Optional specific skill to assess
-     * @return Generated skill assessment
+     * @return Skill assessment content
      */
     public AiResponseDto generateSkillAssessment(Long userId, String skillName) {
         long startTime = System.currentTimeMillis();
@@ -1483,6 +1483,65 @@ prompt.append("Candidate Information:\n");
             return new AiResponseDto(
                 null,
                 "skill-assessment",
+                false,
+                errorMessage,
+                processingTime
+            );
+        }
+    }
+    
+    /**
+     * Generate generic text from a prompt
+     * @param prompt The prompt to generate text from
+     * @param responseType The type of response (for categorization)
+     * @return Generated text response
+     */
+    public AiResponseDto generateText(String prompt, String responseType) {
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            // Validate inputs
+            if (prompt == null || prompt.trim().isEmpty()) {
+                throw new AiServiceException("Prompt cannot be null or empty");
+            }
+            
+            // Validate response type
+            if (responseType == null || responseType.trim().isEmpty()) {
+                responseType = "generic";
+            }
+            
+            // Call Mistral API
+            String generatedText = callMistralApi(prompt);
+            
+            long processingTime = System.currentTimeMillis() - startTime;
+            
+            // Check for error messages in the response
+            if (generatedText != null && generatedText.startsWith("Error:")) {
+                return new AiResponseDto(
+                    generatedText,
+                    responseType,
+                    false,
+                    "Failed to generate text: " + generatedText,
+                    processingTime
+                );
+            }
+            
+            return new AiResponseDto(
+                generatedText,
+                responseType,
+                true,
+                "Text generated successfully",
+                processingTime
+            );
+        } catch (Exception e) {
+            long processingTime = System.currentTimeMillis() - startTime;
+            String errorMessage = "Error generating text: " + e.getMessage();
+            System.err.println(errorMessage);
+            e.printStackTrace();
+            
+            return new AiResponseDto(
+                null,
+                responseType,
                 false,
                 errorMessage,
                 processingTime
