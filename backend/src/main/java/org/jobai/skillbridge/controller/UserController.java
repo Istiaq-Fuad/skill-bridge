@@ -52,7 +52,9 @@ public class UserController {
                     new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
 
             final UserDetails userDetails = userService.loadUserByUsername(user.getUsername());
-            final String jwt = jwtUtil.generateToken((User) userDetails);
+            // Get the User object from the database to generate the token
+            final User authUser = userService.getUserByUsername(user.getUsername());
+            final String jwt = jwtUtil.generateToken(authUser);
 
             return ResponseEntity.ok(jwt);
         } catch (Exception e) {
@@ -74,8 +76,11 @@ public class UserController {
     
     @GetMapping("/username/{username}")
     public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
-        Optional<User> user = userService.getUserByUsername(username);
-        return user.map(ResponseEntity::ok)
-                  .orElse(ResponseEntity.notFound().build());
+        try {
+            User user = userService.getUserByUsername(username);
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

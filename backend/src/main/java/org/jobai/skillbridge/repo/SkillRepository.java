@@ -11,4 +11,5 @@ import java.util.List;
 public interface SkillRepository extends JpaRepository<Skill, Long> {
     List<Skill> findByUser(User user);
     List<Skill> findByNameContainingIgnoreCase(String name);
+    void deleteByUser(User user);
 }

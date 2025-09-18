@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface ExperienceRepository extends JpaRepository<Experience, Long> {
     List<Experience> findByUser(User user);
+    void deleteByUser(User user);
 }
