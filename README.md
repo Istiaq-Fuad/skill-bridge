@@ -17,6 +17,7 @@ SkillBridge is an intelligent AI-driven talent platform that revolutionizes the 
 - Job description optimization
 - Talent pool building
 - Advanced analytics and reporting
+- Enhanced candidate ranking with detailed scoring
 
 ### For Admins
 - Platform monitoring and management
@@ -43,6 +44,7 @@ SkillBridge is an intelligent AI-driven talent platform that revolutionizes the 
 ## API Documentation
 
 - [Resume Parsing API](backend/src/main/resources/docs/resume-parsing-api.md)
+- [Enhanced Job Matching API](backend/src/main/resources/docs/enhanced-job-matching-api.md)
 
 ## Getting Started
 
@@ -95,7 +97,8 @@ java -jar target/skillbridge-0.0.1-SNAPSHOT.jar
 - `main` - Production-ready code
 - `employer-features` - Employer-specific features
 - `ai-development` - AI-related features
-- `resume-parsing-feature` - Resume parsing functionality (current development)
+- `resume-parsing-feature` - Resume parsing functionality
+- `candidate-ranking-feature` - Enhanced candidate ranking functionality (current development)
 
 ### Building New Features
 1. Create a new branch from the appropriate base branch
