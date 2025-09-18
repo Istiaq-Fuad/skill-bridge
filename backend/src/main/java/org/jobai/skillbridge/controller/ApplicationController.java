@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -34,7 +35,7 @@ public class ApplicationController {
     
     @PostMapping("/apply/{jobId}")
     public ResponseEntity<JobApplication> applyToJob(
-            @PathVariable Integer jobId,
+            @PathVariable Long jobId,
             @RequestBody String coverLetter,
             @RequestParam String resumeUrl,
             Authentication authentication) {
@@ -57,6 +58,30 @@ public class ApplicationController {
         return ResponseEntity.ok(application);
     }
     
+    @PutMapping("/{id}/notes")
+    public ResponseEntity<JobApplication> updateApplicationNotes(
+            @PathVariable Long id,
+            @RequestBody String notes) {
+        JobApplication application = applicationService.updateApplicationNotes(id, notes);
+        return ResponseEntity.ok(application);
+    }
+    
+    @PutMapping("/{id}/feedback")
+    public ResponseEntity<JobApplication> updateApplicationFeedback(
+            @PathVariable Long id,
+            @RequestBody String feedback) {
+        JobApplication application = applicationService.updateApplicationFeedback(id, feedback);
+        return ResponseEntity.ok(application);
+    }
+    
+    @PutMapping("/{id}/schedule-interview")
+    public ResponseEntity<JobApplication> scheduleInterview(
+            @PathVariable Long id,
+            @RequestBody LocalDateTime interviewTime) {
+        JobApplication application = applicationService.scheduleInterview(id, interviewTime);
+        return ResponseEntity.ok(application);
+    }
+    
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteApplication(@PathVariable Long id) {
         applicationService.deleteApplication(id);
@@ -65,11 +90,30 @@ public class ApplicationController {
     
     // Employer endpoint to get applications for their jobs
     @GetMapping("/job/{jobId}")
-    public ResponseEntity<List<JobApplication>> getJobApplications(@PathVariable Integer jobId) {
+    public ResponseEntity<List<JobApplication>> getJobApplications(@PathVariable Long jobId) {
         JobPost jobPost = jobService.getJob(jobId);
         if (jobPost == null) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(applicationService.getJobApplications(jobPost));
+    }
+    
+    // Employer endpoint to get applications by status
+    @GetMapping("/job/{jobId}/status/{status}")
+    public ResponseEntity<List<JobApplication>> getJobApplicationsByStatus(
+            @PathVariable Long jobId, 
+            @PathVariable String status) {
+        JobPost jobPost = jobService.getJob(jobId);
+        if (jobPost == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(applicationService.getJobApplicationsByStatus(jobPost, status));
+    }
+    
+    // Employer endpoint to get all applications for their jobs
+    @GetMapping("/employer")
+    public ResponseEntity<List<JobApplication>> getEmployerApplications(Authentication authentication) {
+        User employer = (User) authentication.getPrincipal();
+        return ResponseEntity.ok(applicationService.getApplicationsForEmployer(employer));
     }
 }

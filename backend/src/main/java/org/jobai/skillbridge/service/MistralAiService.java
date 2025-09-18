@@ -107,6 +107,7 @@ public class MistralAiService {
     }
     
     /**
+    // (Remove the duplicate block entirely)
      * Generate a resume for a user (backward compatibility)
      * @param userId The user ID
      * @param jobTitle Optional job title to tailor the resume for
@@ -516,6 +517,7 @@ prompt.append("- Tailor the content to the ").append(jobTitle != null ? jobTitle
         return prompt.toString();
     }
     
+
     /**
      * Build prompt for resume generation (backward compatibility)
      * @param context MCP context data
@@ -582,10 +584,446 @@ prompt.append("- Tailor the content to the ").append(jobTitle != null ? jobTitle
      * @return Formatted prompt
      */
     private String buildJobOptimizationPrompt(Map<String, Object> context, Integer jobId) {
-        // For now, we'll use the same prompt structure but this can be enhanced
-        // to include job description details when you implement job fetching
-        return buildResumePrompt(context, null) + 
-               "\n\nPlease optimize this resume specifically for job ID: " + jobId;
+        StringBuilder prompt = new StringBuilder();
+        
+        // Professional resume writing guidelines
+        prompt.append("You are an expert resume writer with 20+ years of experience in crafting professional resumes for job seekers. ");
+        prompt.append("Your task is to optimize the following resume specifically for the job described below. ");
+        prompt.append("Focus on highlighting the most relevant skills, experiences, and achievements that match the job requirements. ");
+        prompt.append("Use industry-specific keywords and terminology that would resonate with the hiring manager for this role. ");
+        prompt.append("Structure the resume with clear section headings and consistent formatting. ");
+        prompt.append("Ensure the resume is ATS (Applicant Tracking System) friendly.\n\n");
+        
+        // Job information
+        Map<String, Object> jobInfo = (Map<String, Object>) context.get("job_info");
+        if (jobInfo != null) {
+            prompt.append("JOB DETAILS:\n");
+            prompt.append("Position: ").append(jobInfo.get("title")).append("\n");
+            prompt.append("Description: ").append(jobInfo.get("description")).append("\n");
+            if (jobInfo.get("required_experience") != null) {
+                prompt.append("Required Experience: ").append(jobInfo.get("required_experience")).append(" years\n");
+            }
+            if (jobInfo.get("tech_stack") != null) {
+                prompt.append("Required Skills/Technologies: ").append(jobInfo.get("tech_stack")).append("\n");
+            }
+            if (jobInfo.get("location") != null) {
+                prompt.append("Location: ").append(jobInfo.get("location")).append("\n");
+            }
+            if (jobInfo.get("employment_type") != null) {
+                prompt.append("Employment Type: ").append(jobInfo.get("employment_type")).append("\n");
+            }
+            prompt.append("\n");
+        }
+        
+        // Instructions for optimization
+        prompt.append("OPTIMIZATION INSTRUCTIONS:\n");
+        prompt.append("1. Customize the professional summary to align with the job requirements\n");
+        prompt.append("2. Reorder and rephrase work experiences to emphasize relevant achievements\n");
+        prompt.append("3. Highlight skills that match the job description keywords\n");
+        prompt.append("4. Quantify achievements with specific metrics where possible\n");
+        prompt.append("5. Use action verbs and industry-specific terminology\n");
+        prompt.append("6. Ensure the resume is concise (1-2 pages) and well-structured\n\n");
+        
+        // Current resume information (from user profile)
+        prompt.append("CURRENT RESUME:\n\n");
+        
+        // Personal info
+        Map<String, Object> personalInfo = (Map<String, Object>) context.get("personal_info");
+        if (personalInfo != null) {
+            prompt.append("Name: ").append(personalInfo.get("name")).append("\n");
+            prompt.append("Email: ").append(personalInfo.get("email")).append("\n");
+            if (personalInfo.get("phone") != null) {
+                prompt.append("Phone: ").append(personalInfo.get("phone")).append("\n");
+            }
+            if (personalInfo.get("address") != null) {
+                prompt.append("Address: ").append(personalInfo.get("address")).append("\n");
+            }
+            prompt.append("Location: ").append(personalInfo.get("city")).append(", ")
+                  .append(personalInfo.get("country")).append("\n");
+            
+            if (personalInfo.get("bio") != null && !personalInfo.get("bio").toString().trim().isEmpty()) {
+                prompt.append("Professional Summary: ").append(personalInfo.get("bio")).append("\n");
+            }
+            prompt.append("\n");
+        }
+        
+        // Skills
+        prompt.append("Skills:\n");
+        List<Map<String, Object>> skills = (List<Map<String, Object>>) context.get("skills");
+        if (skills != null && !skills.isEmpty()) {
+            Map<String, List<Map<String, Object>>> skillsByCategory = new HashMap<>();
+            for (Map<String, Object> skill : skills) {
+                String category = (String) skill.get("category");
+                if (category == null || category.trim().isEmpty()) category = "General";
+                skillsByCategory.computeIfAbsent(category, k -> new ArrayList<>()).add(skill);
+            }
+            
+            for (Map.Entry<String, List<Map<String, Object>>> entry : skillsByCategory.entrySet()) {
+                prompt.append(entry.getKey()).append(":\n");
+                List<String> skillNames = new ArrayList<>();
+                for (Map<String, Object> skill : entry.getValue()) {
+                    StringBuilder skillEntry = new StringBuilder("- ").append(skill.get("name"));
+                    Object proficiency = skill.get("proficiency_level");
+                    if (proficiency != null) {
+                        skillEntry.append(" (Level: ").append(proficiency).append("/10)");
+                    }
+                    skillNames.add(skillEntry.toString());
+                }
+                prompt.append(String.join("\n", skillNames)).append("\n");
+            }
+        } else {
+            prompt.append("No specific skills provided.\n");
+        }
+        prompt.append("\n");
+        
+        // Education
+        prompt.append("Education:\n");
+        List<Map<String, Object>> educations = (List<Map<String, Object>>) context.get("education");
+        if (educations != null && !educations.isEmpty()) {
+            for (Map<String, Object> edu : educations) {
+                prompt.append("- ").append(edu.get("degree")).append(" in ")
+                      .append(edu.get("field_of_study")).append("\n");
+                prompt.append("  ").append(edu.get("institution")).append("\n");
+                Object startDate = edu.get("start_date");
+                Object endDate = edu.get("end_date");
+                if (startDate != null || endDate != null) {
+                    prompt.append("  ");
+                    if (startDate != null) prompt.append(formatDate(startDate.toString()));
+                    if (endDate != null) {
+                        prompt.append(" - ").append(formatDate(endDate.toString()));
+                    } else {
+                        prompt.append(" - Present");
+                    }
+                    prompt.append("\n");
+                }
+                Object grade = edu.get("grade");
+                if (grade != null && !grade.toString().trim().isEmpty()) {
+                    prompt.append("  Grade: ").append(grade).append("\n");
+                }
+                Object description = edu.get("description");
+                if (description != null && !description.toString().trim().isEmpty()) {
+                    prompt.append("  ").append(description).append("\n");
+                }
+                prompt.append("\n");
+            }
+        } else {
+            prompt.append("No formal education history provided.\n\n");
+        }
+        
+        // Experience
+        prompt.append("Work Experience:\n");
+        List<Map<String, Object>> experiences = (List<Map<String, Object>>) context.get("experience");
+        if (experiences != null && !experiences.isEmpty()) {
+            for (Map<String, Object> exp : experiences) {
+                prompt.append("- ").append(exp.get("position")).append("\n");
+                prompt.append("  ").append(exp.get("company")).append("\n");
+                Object startDate = exp.get("start_date");
+                Object endDate = exp.get("end_date");
+                Object currentlyWorking = exp.get("currently_working");
+                if (startDate != null || endDate != null) {
+                    prompt.append("  ");
+                    if (startDate != null) prompt.append(formatDate(startDate.toString()));
+                    if (Boolean.TRUE.equals(currentlyWorking)) {
+                        prompt.append(" - Present");
+                    } else if (endDate != null) {
+                        prompt.append(" - ").append(formatDate(endDate.toString()));
+                    }
+                    prompt.append("\n");
+                }
+                Object description = exp.get("description");
+                if (description != null && !description.toString().trim().isEmpty()) {
+                    String descStr = description.toString().trim();
+                    if (descStr.contains("\n") || descStr.contains(";") || descStr.contains("-")) {
+                        prompt.append("  Key Achievements:\n");
+                        if (!descStr.contains("-") && !descStr.contains("*")) {
+                            String[] achievements = descStr.contains(";") ? descStr.split(";") : descStr.split("\n");
+                            for (String achievement : achievements) {
+                                if (!achievement.trim().isEmpty()) {
+                                    prompt.append("  - ").append(achievement.trim()).append("\n");
+                                }
+                            }
+                        } else {
+                            prompt.append("  ").append(descStr).append("\n");
+                        }
+                    } else {
+                        prompt.append("  Key Achievements:\n");
+                        prompt.append("  - ").append(descStr).append("\n");
+                    }
+                } else {
+                    prompt.append("  Key Achievements:\n");
+                    prompt.append("  - [Include 3-5 quantifiable achievements with specific results]\n");
+                }
+                prompt.append("\n");
+            }
+        } else {
+            prompt.append("No formal work experience provided.\n\n");
+        }
+        
+        // Portfolio
+        List<Map<String, Object>> portfolios = (List<Map<String, Object>>) context.get("portfolio");
+        if (portfolios != null && !portfolios.isEmpty()) {
+            prompt.append("Portfolio:\n");
+            prompt.append("List relevant projects, publications, or work samples that demonstrate expertise\n");
+            for (Map<String, Object> portfolio : portfolios) {
+                prompt.append("- ").append(portfolio.get("title")).append("\n");
+                Object description = portfolio.get("description");
+                if (description != null && !description.toString().trim().isEmpty()) {
+                    prompt.append("  ").append(description).append("\n");
+                }
+                Object url = portfolio.get("url");
+                if (url != null && !url.toString().trim().isEmpty()) {
+                    prompt.append("  URL: ").append(url).append("\n");
+                }
+                prompt.append("\n");
+            }
+        }
+        
+        // Final instructions
+        prompt.append("\nPlease optimize this resume specifically for the job ID: ").append(jobId).append(".\n");
+        prompt.append("Focus on matching the job requirements with the candidate's most relevant experiences and skills.\n");
+        prompt.append("Return only the optimized resume content without any additional explanations or comments.");
+        
+        return prompt.toString();
+    }
+    
+    /**
+     * Generate interview preparation questions for a user
+     * @param userId The user ID
+     * @param jobId Optional job ID to tailor questions for
+     * @return Generated interview questions and preparation guide
+     */
+    public AiResponseDto generateInterviewPreparation(Long userId, Integer jobId) {
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            // Validate inputs
+            if (userId == null) {
+                throw new AiServiceException("User ID cannot be null");
+            }
+            
+            // Get structured context using MCP
+            Map<String, Object> context = mcpContextService.generateUserProfileContext(userId);
+            
+            // If job ID is provided, get job-specific context
+            if (jobId != null) {
+                Map<String, Object> jobContext = mcpContextService.generateJobOptimizationContext(userId, jobId);
+                context.putAll(jobContext);
+            }
+            
+            // Validate context
+            if (context == null || context.isEmpty()) {
+                throw new AiServiceException("Unable to generate user profile context");
+            }
+            
+            // Create prompt for interview preparation
+            String prompt = buildInterviewPreparationPrompt(context, jobId);
+            
+            // Validate prompt
+            if (prompt == null || prompt.trim().isEmpty()) {
+                throw new AiServiceException("Failed to generate prompt for interview preparation");
+            }
+            
+            // Call Mistral API
+            String preparationContent = callMistralApi(prompt);
+            
+            long processingTime = System.currentTimeMillis() - startTime;
+            
+            // Check for error messages in the response
+            if (preparationContent != null && preparationContent.startsWith("Error:")) {
+                return new AiResponseDto(
+                    preparationContent,
+                    "interview-preparation",
+                    false,
+                    "Failed to generate interview preparation: " + preparationContent,
+                    processingTime
+                );
+            }
+            
+            return new AiResponseDto(
+                preparationContent,
+                "interview-preparation",
+                true,
+                "Interview preparation generated successfully",
+                processingTime
+            );
+        } catch (Exception e) {
+            long processingTime = System.currentTimeMillis() - startTime;
+            String errorMessage = "Error generating interview preparation: " + e.getMessage();
+            System.err.println(errorMessage);
+            e.printStackTrace();
+            
+            return new AiResponseDto(
+                null,
+                "interview-preparation",
+                false,
+                errorMessage,
+                processingTime
+            );
+        }
+    }
+    
+    /**
+     * Build prompt for interview preparation
+     * @param context MCP context data
+     * @param jobId Optional job ID
+     * @return Formatted prompt
+     */
+    private String buildInterviewPreparationPrompt(Map<String, Object> context, Integer jobId) {
+        StringBuilder prompt = new StringBuilder();
+        
+        prompt.append("You are an expert career coach and interview preparation specialist with 15+ years of experience ");
+        prompt.append("helping job seekers succeed in technical and behavioral interviews. ");
+        prompt.append("Your task is to create a comprehensive interview preparation guide based on the candidate's profile ");
+        if (jobId != null) {
+            prompt.append("and tailored to the specific job they're applying for. ");
+        } else {
+            prompt.append("and general best practices. ");
+        }
+        prompt.append("Provide actionable advice, sample questions, and strategies for success.\n\n");
+        
+        // Job information (if available)
+        Map<String, Object> jobInfo = (Map<String, Object>) context.get("job_info");
+        if (jobInfo != null && jobId != null) {
+            prompt.append("TARGET JOB:\n");
+            prompt.append("Position: ").append(jobInfo.get("title")).append("\n");
+            prompt.append("Description: ").append(jobInfo.get("description")).append("\n");
+            if (jobInfo.get("required_experience") != null) {
+                prompt.append("Required Experience: ").append(jobInfo.get("required_experience")).append(" years\n");
+            }
+            if (jobInfo.get("tech_stack") != null) {
+                prompt.append("Required Skills/Technologies: ").append(jobInfo.get("tech_stack")).append("\n");
+            }
+            prompt.append("\n");
+        }
+        
+        // Candidate information
+        prompt.append("CANDIDATE PROFILE:\n\n");
+        
+        // Personal info
+        Map<String, Object> personalInfo = (Map<String, Object>) context.get("personal_info");
+        if (personalInfo != null) {
+            prompt.append("Name: ").append(personalInfo.get("name")).append("\n");
+            if (personalInfo.get("bio") != null && !personalInfo.get("bio").toString().trim().isEmpty()) {
+                prompt.append("Professional Summary: ").append(personalInfo.get("bio")).append("\n");
+            }
+            prompt.append("\n");
+        }
+        
+        // Skills
+        List<Map<String, Object>> skills = (List<Map<String, Object>>) context.get("skills");
+        if (skills != null && !skills.isEmpty()) {
+            prompt.append("Key Skills:\n");
+            for (Map<String, Object> skill : skills) {
+                prompt.append("- ").append(skill.get("name"));
+                if (skill.get("category") != null) {
+                    prompt.append(" (Category: ").append(skill.get("category")).append(")");
+                }
+                if (skill.get("proficiency_level") != null) {
+                    prompt.append(" (Proficiency: ").append(skill.get("proficiency_level")).append("/10)");
+                }
+                prompt.append("\n");
+            }
+            prompt.append("\n");
+        }
+        
+        // Experience
+        List<Map<String, Object>> experiences = (List<Map<String, Object>>) context.get("experience");
+        if (experiences != null && !experiences.isEmpty()) {
+            prompt.append("Work Experience:\n");
+            for (Map<String, Object> exp : experiences) {
+                prompt.append("- ").append(exp.get("position")).append(" at ").append(exp.get("company")).append("\n");
+                if (exp.get("description") != null) {
+                    prompt.append("  ").append(exp.get("description")).append("\n");
+                }
+                prompt.append("\n");
+            }
+        }
+        
+        // Education
+        List<Map<String, Object>> educations = (List<Map<String, Object>>) context.get("education");
+        if (educations != null && !educations.isEmpty()) {
+            prompt.append("Education:\n");
+            for (Map<String, Object> edu : educations) {
+                prompt.append("- ").append(edu.get("degree")).append(" in ").append(edu.get("field_of_study"));
+                if (edu.get("institution") != null) {
+                    prompt.append(" from ").append(edu.get("institution"));
+                }
+                prompt.append("\n");
+            }
+            prompt.append("\n");
+        }
+        
+        // Preparation structure
+        prompt.append("Please structure your response as follows:\n\n");
+        
+        prompt.append("1. INTERVIEW OVERVIEW\n");
+        prompt.append("   - Types of interviews to expect (technical, behavioral, HR, etc.)\n");
+        if (jobId != null) {
+            prompt.append("   - Role-specific interview expectations\n");
+        }
+        prompt.append("   - Typical interview process duration and stages\n\n");
+        
+        prompt.append("2. COMMON INTERVIEW QUESTIONS\n");
+        prompt.append("   A. Behavioral Questions (use STAR method format)\n");
+        prompt.append("      - Tell me about yourself\n");
+        prompt.append("      - Why do you want to work here?\n");
+        prompt.append("      - Describe a challenging project and how you handled it\n");
+        prompt.append("      - What are your strengths and weaknesses?\n");
+        prompt.append("      - Where do you see yourself in 5 years?\n\n");
+        
+        prompt.append("   B. Technical Questions\n");
+        if (skills != null && !skills.isEmpty()) {
+            prompt.append("      (Based on the candidate's skills)\n");
+        } else {
+            prompt.append("      (General technical questions for the role)\n");
+        }
+        prompt.append("      - Problem-solving scenarios\n");
+        prompt.append("      - System design questions (if applicable)\n");
+        prompt.append("      - Coding challenges (if applicable)\n\n");
+        
+        prompt.append("3. ANSWER STRATEGIES\n");
+        prompt.append("   - How to structure responses using the STAR method\n");
+        prompt.append("   - Techniques for handling difficult questions\n");
+        prompt.append("   - Tips for showcasing achievements and skills\n");
+        prompt.append("   - How to address employment gaps or career changes\n\n");
+        
+        prompt.append("4. ROLE-SPECIFIC PREPARATION\n");
+        if (jobId != null && jobInfo != null) {
+            prompt.append("   - Industry-specific knowledge for the ").append(jobInfo.get("title")).append(" role\n");
+            if (jobInfo.get("tech_stack") != null) {
+                prompt.append("   - Technical preparation for required technologies\n");
+            }
+        } else {
+            prompt.append("   - General industry knowledge and trends\n");
+        }
+        prompt.append("   - Company research strategies\n");
+        prompt.append("   - Understanding the company culture and values\n\n");
+        
+        prompt.append("5. PRACTICAL EXERCISES\n");
+        prompt.append("   - Mock interview scenarios\n");
+        prompt.append("   - Self-practice techniques\n");
+        prompt.append("   - How to get feedback on responses\n\n");
+        
+        prompt.append("6. DO'S AND DON'TS\n");
+        prompt.append("   - Professional presentation and attire\n");
+        prompt.append("   - Communication tips (tone, pace, clarity)\n");
+        prompt.append("   - Body language and non-verbal cues\n");
+        prompt.append("   - What to avoid during interviews\n\n");
+        
+        prompt.append("7. FOLLOW-UP STRATEGIES\n");
+        prompt.append("   - Sending thank-you notes\n");
+        prompt.append("   - Handling rejection constructively\n");
+        prompt.append("   - Negotiating offers\n\n");
+        
+        prompt.append("Provide specific, actionable advice tailored to this candidate's background and ");
+        if (jobId != null) {
+            prompt.append("the target job role. ");
+        } else {
+            prompt.append("general interview best practices. ");
+        }
+        prompt.append("Include examples and practical exercises where appropriate.");
+        
+        return prompt.toString();
     }
     
     /**
@@ -753,43 +1191,417 @@ prompt.append("- Tailor the content to the ").append(jobTitle != null ? jobTitle
             }
         }
         
-        return "==================== RESUME ====================\n\n" +
-               "NAME: [User Name]\n" +
-               "EMAIL: [User Email]\n" +
-               "PHONE: [User Phone]\n" +
-               "LOCATION: [User City, Country]\n\n" +
-               "PROFESSIONAL SUMMARY:\n" +
-               "Highly motivated and results-driven " + jobTitle + " with [X] years of experience in [industry/field]. " +
-               "Proven track record of [key achievement or skill]. Seeking to leverage expertise in [relevant area] " +
-               "to contribute to organizational success.\n\n" +
-               "SKILLS:\n" +
-               "TECHNICAL SKILLS:\n" +
-               "- [Skill 1] (Proficiency: /10)\n" +
-               "- [Skill 2] (Proficiency: /10)\n" +
-               "- [Skill 3] (Proficiency: /10)\n\n" +
-               "SOFT SKILLS:\n" +
-               "- [Soft Skill 1]\n" +
-               "- [Soft Skill 2]\n" +
-               "- [Soft Skill 3]\n\n" +
-               "PROFESSIONAL EXPERIENCE:\n" +
-               "[Job Title]\n" +
-               "[Company Name], [Location]\n" +
-               "[Start Date] - [End Date]\n" +
-               "Key Achievements:\n" +
-               "- [Quantifiable achievement with metrics]\n" +
-               "- [Project or initiative you led]\n" +
-               "- [Result or improvement you delivered]\n\n" +
-               "EDUCATION:\n" +
-               "[Degree] in [Field of Study]\n" +
-               "[University Name], [Location]\n" +
-               "[Graduation Date]\n" +
-               "[Relevant coursework or honors]\n\n" +
-               "================================================\n\n" +
-               "Note: This is a fallback resume template. To generate an AI-powered resume:\n" +
-               "1. Ensure you have configured your Mistral API token in the .env file\n" +
-               "2. Set MISTRAL_API_TOKEN=your_actual_token_here\n" +
-               "3. Optionally set MISTRAL_MODEL_NAME to your preferred model\n" +
-               "4. Restart the application\n\n" +
-               "For more information, visit: https://mistral.ai/";
+return "==================== RESUME ====================\n"
+    + "NAME: [User Name]\n"
+    + "EMAIL: [User Email]\n"
+    + "PHONE: [User Phone]\n"
+    + "LOCATION: [User City, Country]\n\n"
+    + "PROFESSIONAL SUMMARY:\n"
+    + "Highly motivated and results-driven " + jobTitle + " with [X] years of experience in [industry/field]. "
+    + "Proven track record of [key achievement or skill]. Seeking to leverage expertise in [relevant area] "
+    + "to contribute to organizational success.\n\n"
+    + "SKILLS:\n"
+    + "TECHNICAL SKILLS:\n"
+    + "- [Skill 1] (Proficiency: /10)\n"
+    + "- [Skill 2] (Proficiency: /10)\n"
+    + "- [Skill 3] (Proficiency: /10)\n\n"
+    + "SOFT SKILLS:\n"
+    + "- [Soft Skill 1]\n"
+    + "- [Soft Skill 2]\n"
+    + "- [Soft Skill 3]\n\n"
+    + "PROFESSIONAL EXPERIENCE:\n"
+    + "[Job Title]\n"
+    + "[Company Name], [Location]\n"
+    + "[Start Date] - [End Date]\n"
+    + "Key Achievements:\n"
+    + "- [Quantifiable achievement with metrics]\n"
+    + "- [Project or initiative you led]\n"
+    + "- [Result or improvement you delivered]\n\n"
+    + "EDUCATION:\n"
+    + "[Degree] in [Field of Study]\n"
+    + "[University Name], [Location]\n"
+    + "[Graduation Date]\n"
+    + "[Relevant coursework or honors]\n\n"
+    + "================================================\n\n"
+    + "Note: This is a fallback resume template. To generate an AI-powered resume:\n"
+    + "1. Ensure you have configured your Mistral API token in the .env file\n"
+    + "2. Set MISTRAL_API_TOKEN=your_actual_token_here\n"
+    + "3. Optionally set MISTRAL_MODEL_NAME to your preferred model\n"
+    + "4. Restart the application\n\n"
+    + "For more information, visit: https://mistral.ai/";
+    }
+    
+    /**
+     * Generate interview questions for a user based on job and skills
+     * @param userId The user ID
+     * @param jobId Optional job ID to tailor questions for
+     * @return Generated interview questions
+     */
+    public AiResponseDto generateInterviewQuestions(Long userId, Integer jobId) {
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            // Validate inputs
+            if (userId == null) {
+                throw new AiServiceException("User ID cannot be null");
+            }
+            
+            // Get structured context using MCP
+            Map<String, Object> context = mcpContextService.generateUserProfileContext(userId);
+            
+            // If job ID is provided, get job-specific context
+            if (jobId != null) {
+                context = mcpContextService.generateJobOptimizationContext(userId, jobId);
+            }
+            
+            // Validate context
+            if (context == null || context.isEmpty()) {
+                throw new AiServiceException("Unable to generate user profile context");
+            }
+            
+            // Create prompt for interview questions
+            String prompt = buildInterviewQuestionsPrompt(context, jobId);
+            
+            // Validate prompt
+            if (prompt == null || prompt.trim().isEmpty()) {
+                throw new AiServiceException("Failed to generate prompt for interview questions");
+            }
+            
+            // Call Mistral API
+            String questionsContent = callMistralApi(prompt);
+            
+            long processingTime = System.currentTimeMillis() - startTime;
+            
+            // Check for error messages in the response
+            if (questionsContent != null && questionsContent.startsWith("Error:")) {
+                return new AiResponseDto(
+                    questionsContent,
+                    "interview-questions",
+                    false,
+                    "Failed to generate interview questions: " + questionsContent,
+                    processingTime
+                );
+            }
+            
+            return new AiResponseDto(
+                questionsContent,
+                "interview-questions",
+                true,
+                "Interview questions generated successfully",
+                processingTime
+            );
+        } catch (Exception e) {
+            long processingTime = System.currentTimeMillis() - startTime;
+            String errorMessage = "Error generating interview questions: " + e.getMessage();
+            System.err.println(errorMessage);
+            e.printStackTrace();
+            
+            return new AiResponseDto(
+                null,
+                "interview-questions",
+                false,
+                errorMessage,
+                processingTime
+            );
+        }
+    }
+    
+    /**
+     * Build prompt for interview questions
+     * @param context MCP context data
+     * @param jobId Optional job ID
+     * @return Formatted prompt
+     */
+    private String buildInterviewQuestionsPrompt(Map<String, Object> context, Integer jobId) {
+        StringBuilder prompt = new StringBuilder();
+        
+        prompt.append("You are an expert HR professional and interview coach with extensive experience in preparing candidates for job interviews. ");
+        prompt.append("Your task is to generate comprehensive interview questions and preparation guidance for the candidate based on their profile ");
+        
+        if (jobId != null) {
+            prompt.append("and the specific job they are applying for (Job ID: ").append(jobId).append("). ");
+        } else {
+            prompt.append("and general professional best practices. ");
+        }
+        
+        prompt.append("Structure your response as follows:\n");
+
+        
+prompt.append("1. COMMON INTERVIEW QUESTIONS\n");
+prompt.append("   - Provide 10-15 common interview questions with suggested approaches\n");
+prompt.append("   - Include both behavioral and technical questions where relevant\n");
+prompt.append("   - Offer tips on how to structure responses using the STAR method (Situation, Task, Action, Result)\n\n");
+        
+        prompt.append("2. ROLE-SPECIFIC QUESTIONS");
+        if (jobId != null) {
+            prompt.append("   - Generate 5-10 questions specifically tailored to the job requirements\n");
+            prompt.append("   - Focus on skills and experiences mentioned in the job description\n");
+            prompt.append("   - Include questions about challenges specific to the role");
+        } else {
+            prompt.append("   - Generate 5-10 questions based on the candidate's skills and experience");
+            prompt.append("   - Focus on areas where the candidate has significant experienc");
+        }
+        prompt.append("\n\n");
+        
+        prompt.append("3. CANDIDATE TAILORED QUESTIONS");
+        prompt.append("   - Create 5 questions that directly relate to the candidate's background\n");
+        prompt.append("   - Reference specific experiences, skills, or achievements from their profile  \n");
+        prompt.append("   - Include questions that allow the candidate to showcase their unique strengths\n\n");
+        
+        prompt.append("4. ANSWER GUIDELINE");
+        prompt.append("   - For each question, provide a framework for crafting strong responses");
+        prompt.append("   - Include specific examples of what good answers might include");
+        prompt.append("   - Highlight common pitfalls to avoid");
+        
+        prompt.append("5. INDUSTRY INSIGHTS");
+        prompt.append("   - Share current trends and expectations in the candidate's field");
+        prompt.append("   - Mention any specific qualities or skills that are particularly valued");
+        prompt.append("   - Provide context about the company culture if job details are available");
+        
+        prompt.append("Use the following candidate profile information for your question generation:");
+        
+        // Add personal info
+        Map<String, Object> personalInfo = (Map<String, Object>) context.get("personal_info");
+        if (personalInfo != null) {
+prompt.append("Candidate Information:\n");
+            prompt.append("- Name: ").append(personalInfo.get("name")).append("");
+            if (personalInfo.get("bio") != null) {
+                prompt.append("- Professional Summary: ").append(personalInfo.get("bio")).append("");
+            }
+            prompt.append("");
+        }
+        
+        // Add skills
+        List<Map<String, Object>> skills = (List<Map<String, Object>>) context.get("skills");
+        if (skills != null && !skills.isEmpty()) {
+            prompt.append("Key Skills:");
+            for (Map<String, Object> skill : skills) {
+                prompt.append("- ").append(skill.get("name"));
+                if (skill.get("category") != null) {
+                    prompt.append(" (Category: ").append(skill.get("category")).append(")");
+                }
+                if (skill.get("proficiency_level") != null) {
+                    prompt.append(" (Self-rated: ").append(skill.get("proficiency_level")).append("/10)");
+                }
+                prompt.append("");
+            }
+            prompt.append("");
+        }
+        
+        // Add experience
+        List<Map<String, Object>> experiences = (List<Map<String, Object>>) context.get("experience");
+        if (experiences != null && !experiences.isEmpty()) {
+            prompt.append("Work Experience");
+            for (Map<String, Object> exp : experiences) {
+                prompt.append("- ").append(exp.get("position")).append(" at ").append(exp.get("company"));
+                if (exp.get("description") != null) {
+                    prompt.append(": ").append(exp.get("description"));
+                }
+                prompt.append("");
+            }
+            prompt.append("");
+        }
+        
+        // Add job info if available
+        Map<String, Object> jobInfo = (Map<String, Object>) context.get("job_info");
+        if (jobInfo != null) {
+            prompt.append("Target Job Information:");
+            prompt.append("- Position: ").append(jobInfo.get("title")).append("");
+            prompt.append("- Description: ").append(jobInfo.get("description")).append("");
+            if (jobInfo.get("tech_stack") != null) {
+                prompt.append("- Required Skills/Technologies: ").append(jobInfo.get("tech_stack")).append("");
+            }
+            prompt.append("");
+        }
+        
+        prompt.append("Please provide comprehensive interview preparation materials based on this information.");
+        
+        return prompt.toString();
+    }
+
+    
+    /**
+     * Generate a skill assessment for a user
+     * @param userId The user ID
+     * @param skillName Optional specific skill to assess
+     * @return Generated skill assessment
+     */
+    public AiResponseDto generateSkillAssessment(Long userId, String skillName) {
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            // Validate inputs
+            if (userId == null) {
+                throw new AiServiceException("User ID cannot be null");
+            }
+            
+            // Get structured context using MCP
+            Map<String, Object> context = mcpContextService.generateUserProfileContext(userId);
+            
+            // Validate context
+            if (context == null || context.isEmpty()) {
+                throw new AiServiceException("Unable to generate user profile context");
+            }
+            
+            // Create prompt for skill assessment
+            String prompt = buildSkillAssessmentPrompt(context, skillName);
+            
+            // Validate prompt
+            if (prompt == null || prompt.trim().isEmpty()) {
+                throw new AiServiceException("Failed to generate prompt for skill assessment");
+            }
+            
+            // Call Mistral API
+            String assessmentContent = callMistralApi(prompt);
+            
+            long processingTime = System.currentTimeMillis() - startTime;
+            
+            // Check for error messages in the response
+            if (assessmentContent != null && assessmentContent.startsWith("Error:")) {
+                return new AiResponseDto(
+                    assessmentContent,
+                    "skill-assessment",
+                    false,
+                    "Failed to generate skill assessment: " + assessmentContent,
+                    processingTime
+                );
+            }
+            
+            return new AiResponseDto(
+                assessmentContent,
+                "skill-assessment",
+                true,
+                "Skill assessment generated successfully",
+                processingTime
+            );
+        } catch (Exception e) {
+            long processingTime = System.currentTimeMillis() - startTime;
+            String errorMessage = "Error generating skill assessment: " + e.getMessage();
+            System.err.println(errorMessage);
+            e.printStackTrace();
+            
+            return new AiResponseDto(
+                null,
+                "skill-assessment",
+                false,
+                errorMessage,
+                processingTime
+            );
+        }
+    }
+    
+    /**
+     * Build prompt for skill assessment
+     * @param context MCP context data
+     * @param skillName Optional specific skill to assess
+     * @return Formatted prompt
+     */
+    private String buildSkillAssessmentPrompt(Map<String, Object> context, String skillName) {
+        StringBuilder prompt = new StringBuilder();
+        
+        prompt.append("You are an expert skills assessor with extensive experience in evaluating professional competencies. ");
+        prompt.append("Your task is to create a comprehensive skill assessment for the user based on their profile. ");
+        
+        if (skillName != null && !skillName.isEmpty()) {
+            prompt.append("Focus specifically on assessing the user's proficiency in ").append(skillName).append(". ");
+        } else {
+            prompt.append("Provide a comprehensive assessment of all the user's skills. ");
+        }
+        
+        prompt.append("Structure your response as follows:\n\n");
+        prompt.append("1. SKILL ASSESSMENT SUMMARY\n");
+        prompt.append("   - Overall skill level (Beginner, Intermediate, Advanced, Expert)\n");
+        prompt.append("   - Key strengths\n");
+        prompt.append("   - Areas for improvement\n\n");
+        
+        if (skillName != null && !skillName.isEmpty()) {
+            prompt.append("2. DETAILED ").append(skillName.toUpperCase()).append(" ASSESSMENT\n");
+            prompt.append("   - Current proficiency level (1-10 scale)\n");
+            prompt.append("   - Years of experience\n");
+            prompt.append("   - Notable achievements\n");
+            prompt.append("   - Specific strengths\n");
+            prompt.append("   - Improvement recommendations\n\n");
+        } else {
+            prompt.append("2. DETAILED SKILL ASSESSMENTS\n");
+            prompt.append("   For each skill, provide:\n");
+            prompt.append("   - Skill name\n");
+            prompt.append("   - Proficiency level (1-10 scale)\n");
+            prompt.append("   - Years of experience\n");
+            prompt.append("   - Notable achievements\n");
+            prompt.append("   - Specific strengths\n");
+            prompt.append("   - Improvement recommendations\n\n");
+        }
+        
+        prompt.append("3. LEARNING PATH RECOMMENDATIONS\n");
+        prompt.append("   - Suggested courses or certifications\n");
+        prompt.append("   - Recommended projects or practice exercises\n");
+        prompt.append("   - Industry resources for skill development\n\n");
+        
+        prompt.append("4. MARKET INSIGHTS\n");
+        prompt.append("   - Current market demand for these skills\n");
+        prompt.append("   - Salary ranges associated with different proficiency levels\n");
+        prompt.append("   - Emerging trends in the skill area\n\n");
+        
+        prompt.append("Use the following user profile information for your assessment:\n\n");
+        
+        // Add personal info
+        Map<String, Object> personalInfo = (Map<String, Object>) context.get("personal_info");
+        if (personalInfo != null) {
+            prompt.append("Personal Information:\n");
+            prompt.append("- Name: ").append(personalInfo.get("name")).append("\n");
+            if (personalInfo.get("bio") != null) {
+                prompt.append("- Professional Summary: ").append(personalInfo.get("bio")).append("\n");
+            }
+            prompt.append("\n");
+        }
+        
+        // Add skills
+        List<Map<String, Object>> skills = (List<Map<String, Object>>) context.get("skills");
+        if (skills != null && !skills.isEmpty()) {
+            prompt.append("Current Skills:\n");
+            for (Map<String, Object> skill : skills) {
+                prompt.append("- ").append(skill.get("name"));
+                if (skill.get("category") != null) {
+                    prompt.append(" (Category: ").append(skill.get("category")).append(")");
+                }
+                if (skill.get("proficiency_level") != null) {
+                    prompt.append(" (Self-rated: ").append(skill.get("proficiency_level")).append("/10)");
+                }
+                prompt.append("\n");
+            }
+            prompt.append("\n");
+        }
+        
+        // Add experience
+        List<Map<String, Object>> experiences = (List<Map<String, Object>>) context.get("experience");
+        if (experiences != null && !experiences.isEmpty()) {
+            prompt.append("Work Experience:\n");
+            for (Map<String, Object> exp : experiences) {
+                prompt.append("- ").append(exp.get("position")).append(" at ").append(exp.get("company"));
+                if (exp.get("description") != null) {
+                    prompt.append(": ").append(exp.get("description"));
+                }
+                prompt.append("\n");
+            }
+            prompt.append("\n");
+        }
+        
+        // Add education
+        List<Map<String, Object>> educations = (List<Map<String, Object>>) context.get("education");
+        if (educations != null && !educations.isEmpty()) {
+            prompt.append("Education:\n");
+            for (Map<String, Object> edu : educations) {
+                prompt.append("- ").append(edu.get("degree")).append(" in ").append(edu.get("field_of_study"));
+                if (edu.get("institution") != null) {
+                    prompt.append(" from ").append(edu.get("institution"));
+                }
+                prompt.append("\n");
+            }
+            prompt.append("\n");
+        }
+        
+        prompt.append("\nPlease provide your comprehensive skill assessment based on this information.");
+        
+        return prompt.toString();
     }
 }

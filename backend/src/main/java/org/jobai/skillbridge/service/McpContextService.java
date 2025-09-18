@@ -3,11 +3,13 @@ package org.jobai.skillbridge.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jobai.skillbridge.model.Education;
 import org.jobai.skillbridge.model.Experience;
+import org.jobai.skillbridge.model.JobPost;
 import org.jobai.skillbridge.model.Portfolio;
 import org.jobai.skillbridge.model.Skill;
 import org.jobai.skillbridge.model.User;
 import org.jobai.skillbridge.repo.EducationRepository;
 import org.jobai.skillbridge.repo.ExperienceRepository;
+import org.jobai.skillbridge.repo.JobRepo;
 import org.jobai.skillbridge.repo.PortfolioRepository;
 import org.jobai.skillbridge.repo.SkillRepository;
 import org.jobai.skillbridge.repo.UserRepository;
@@ -34,6 +36,9 @@ public class McpContextService {
     
     @Autowired
     private PortfolioRepository portfolioRepository;
+    
+    @Autowired
+    private JobRepo jobRepository;
     
     @Autowired
     private ObjectMapper objectMapper;
@@ -153,11 +158,24 @@ public class McpContextService {
      * @return Map containing job-specific context
      */
     public Map<String, Object> generateJobOptimizationContext(Long userId, Integer jobId) {
-        // This would include job details and user profile
+        // Start with user profile context
         Map<String, Object> context = generateUserProfileContext(userId);
         
-        // Add job-specific information here
-        // You would fetch job details from your JobRepo
+        // Add job-specific information
+        JobPost job = jobRepository.findById(Long.valueOf(jobId))
+                .orElseThrow(() -> new RuntimeException("Job not found"));
+        
+        Map<String, Object> jobInfo = new HashMap<>();
+        jobInfo.put("title", getFieldValue(job, "postProfile"));
+        jobInfo.put("description", getFieldValue(job, "postDesc"));
+        jobInfo.put("required_experience", getFieldValue(job, "reqExperience"));
+        jobInfo.put("tech_stack", getFieldValue(job, "postTechStack"));
+        jobInfo.put("location", getFieldValue(job, "location"));
+        jobInfo.put("employment_type", getFieldValue(job, "employmentType"));
+        jobInfo.put("salary_min", getFieldValue(job, "salaryMin"));
+        jobInfo.put("salary_max", getFieldValue(job, "salaryMax"));
+        
+        context.put("job_info", jobInfo);
         
         return context;
     }

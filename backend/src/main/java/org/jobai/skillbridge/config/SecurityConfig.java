@@ -41,7 +41,13 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/api/users/register", "/api/users/login", "/jobs", "/jobs/keyword/**").permitAll()
+                        .requestMatchers("/", "/api/users/register", "/api/users/login").permitAll()
+                        .requestMatchers("/api/jobs/**").permitAll()
+                        .requestMatchers("/api/profile/**").hasAnyRole("JOB_SEEKER", "EMPLOYER", "ADMIN")
+                        .requestMatchers("/api/applications/**").hasAnyRole("JOB_SEEKER", "EMPLOYER", "ADMIN")
+                        .requestMatchers("/api/ai/**").hasAnyRole("JOB_SEEKER", "ADMIN")
+                        .requestMatchers("/api/employer/**").hasAnyRole("EMPLOYER", "ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

@@ -26,10 +26,23 @@ public class JobApplication {
     private User user;
     
     private LocalDateTime appliedAt;
+    private LocalDateTime lastUpdated;
     private String status; // APPLIED, REVIEWED, INTERVIEW, REJECTED, ACCEPTED
     
     @Column(length = 1000)
     private String coverLetter;
     
     private String resumeUrl;
+    
+    @Column(length = 1000)
+    private String notes;
+    
+    private String feedback;
+    
+    @ElementCollection
+    private java.util.List<String> interviewStages;
+    
+    private LocalDateTime interviewScheduledAt;
+    
+    private String source; // How the candidate found the job (JOB_PORTAL, REFERRAL, etc.)
 }

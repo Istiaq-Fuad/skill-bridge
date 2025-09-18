@@ -74,6 +74,60 @@ public class AiController {
     }
     
     /**
+     * Generate a skill assessment for the authenticated user
+     * @param skillName Optional specific skill to assess
+     * @param authentication Authentication object containing user info
+     * @return Generated skill assessment
+     */
+    @PostMapping("/skills/assess")
+    public ResponseEntity<AiResponseDto> generateSkillAssessment(
+            @RequestParam(required = false) String skillName,
+            Authentication authentication) {
+        
+        try {
+            User user = (User) authentication.getPrincipal();
+            AiResponseDto response = aiService.generateSkillAssessment(user.getId(), skillName);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            AiResponseDto errorResponse = new AiResponseDto(
+                null,
+                "skill-assessment",
+                false,
+                "Error generating skill assessment: " + e.getMessage(),
+                0
+            );
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+    
+    /**
+     * Generate interview questions for the authenticated user
+     * @param jobId Optional job ID to tailor questions for
+     * @param authentication Authentication object containing user info
+     * @return Generated interview questions
+     */
+    @PostMapping("/interview/questions")
+    public ResponseEntity<AiResponseDto> generateInterviewQuestions(
+            @RequestParam(required = false) Integer jobId,
+            Authentication authentication) {
+        
+        try {
+            User user = (User) authentication.getPrincipal();
+            AiResponseDto response = aiService.generateInterviewQuestions(user.getId(), jobId);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            AiResponseDto errorResponse = new AiResponseDto(
+                null,
+                "interview-questions",
+                false,
+                "Error generating interview questions: " + e.getMessage(),
+                0
+            );
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+    
+    /**
      * Get MCP context for debugging purposes
      * @param authentication Authentication object containing user info
      * @return User profile context

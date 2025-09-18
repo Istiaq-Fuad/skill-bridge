@@ -7,7 +7,6 @@ import org.jobai.skillbridge.repo.JobApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,30 +16,20 @@ public class ApplicationService {
     @Autowired
     private JobApplicationRepository applicationRepository;
     
-    /**
-     * Helper method to set field value using reflection
-     * @param obj The object to set the field value on
-     * @param fieldName The name of the field
-     * @param value The value to set
-     */
-    private void setFieldValue(Object obj, String fieldName, Object value) {
-        try {
-            String capitalizedFieldName = Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
-            String setterName = "set" + capitalizedFieldName;
-            Method method = obj.getClass().getMethod(setterName, value.getClass());
-            method.invoke(obj, value);
-        } catch (Exception e) {
-            System.err.println("Could not set field " + fieldName + " in " + obj.getClass().getName());
-            e.printStackTrace();
-        }
-    }
-    
     public List<JobApplication> getUserApplications(User user) {
         return applicationRepository.findByUser(user);
     }
     
     public List<JobApplication> getJobApplications(JobPost jobPost) {
         return applicationRepository.findByJobPost(jobPost);
+    }
+    
+    public List<JobApplication> getApplicationsByStatus(String status) {
+        return applicationRepository.findByStatus(status);
+    }
+    
+    public List<JobApplication> getJobApplicationsByStatus(JobPost jobPost, String status) {
+        return applicationRepository.findByJobPostAndStatus(jobPost, status);
     }
     
     public JobApplication applyToJob(User user, JobPost jobPost, String coverLetter, String resumeUrl) {
@@ -50,12 +39,13 @@ public class ApplicationService {
         }
         
         JobApplication application = new JobApplication();
-        setFieldValue(application, "user", user);
-        setFieldValue(application, "jobPost", jobPost);
-        setFieldValue(application, "appliedAt", LocalDateTime.now());
-        setFieldValue(application, "status", "APPLIED");
-        setFieldValue(application, "coverLetter", coverLetter);
-        setFieldValue(application, "resumeUrl", resumeUrl);
+        application.setUser(user);
+        application.setJobPost(jobPost);
+        application.setAppliedAt(LocalDateTime.now());
+        application.setLastUpdated(LocalDateTime.now());
+        application.setStatus("APPLIED");
+        application.setCoverLetter(coverLetter);
+        application.setResumeUrl(resumeUrl);
         
         return applicationRepository.save(application);
     }
@@ -63,11 +53,40 @@ public class ApplicationService {
     public JobApplication updateApplicationStatus(Long applicationId, String status) {
         JobApplication application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
-        setFieldValue(application, "status", status);
+        application.setStatus(status);
+        application.setLastUpdated(LocalDateTime.now());
+        return applicationRepository.save(application);
+    }
+    
+    public JobApplication updateApplicationNotes(Long applicationId, String notes) {
+        JobApplication application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Application not found"));
+        application.setNotes(notes);
+        application.setLastUpdated(LocalDateTime.now());
+        return applicationRepository.save(application);
+    }
+    
+    public JobApplication updateApplicationFeedback(Long applicationId, String feedback) {
+        JobApplication application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Application not found"));
+        application.setFeedback(feedback);
+        application.setLastUpdated(LocalDateTime.now());
+        return applicationRepository.save(application);
+    }
+    
+    public JobApplication scheduleInterview(Long applicationId, LocalDateTime interviewTime) {
+        JobApplication application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Application not found"));
+        application.setInterviewScheduledAt(interviewTime);
+        application.setLastUpdated(LocalDateTime.now());
         return applicationRepository.save(application);
     }
     
     public void deleteApplication(Long id) {
         applicationRepository.deleteById(id);
+    }
+    
+    public List<JobApplication> getApplicationsForEmployer(User employer) {
+        return applicationRepository.findByJobPostEmployer(employer);
     }
 }
