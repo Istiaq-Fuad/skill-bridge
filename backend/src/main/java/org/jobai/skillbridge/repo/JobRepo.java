@@ -3,6 +3,7 @@ package org.jobai.skillbridge.repo;
 import org.jobai.skillbridge.model.JobPost;
 import org.jobai.skillbridge.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,4 +14,7 @@ public interface JobRepo extends JpaRepository<JobPost, Long> {
             String postDesc);
     public List<JobPost> findByEmployer(User employer);
     public List<JobPost> findByEmployerAndJobStatus(User employer, String jobStatus);
+    
+    @Query("SELECT COUNT(j) FROM JobPost j WHERE j.jobStatus = :status")
+    long countByJobStatus(String status);
 }
