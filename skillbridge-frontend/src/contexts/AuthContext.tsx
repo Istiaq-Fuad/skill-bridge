@@ -41,12 +41,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedUser = localStorage.getItem("user");
 
     if (storedToken && storedToken.trim() && storedUser) {
-      setToken(storedToken);
+      // Validate token format before using it
       try {
+        const parts = storedToken.split(".");
+        if (parts.length !== 3) {
+          throw new Error("Invalid JWT format");
+        }
+
+        // Try to decode the payload to check if it's a valid JWT
+        const payload = JSON.parse(
+          atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
+        );
+
+        // Check if token is expired
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          throw new Error("Token expired");
+        }
+
+        setToken(storedToken);
         setUser(JSON.parse(storedUser));
-      } catch {
+      } catch (error) {
+        console.warn("Invalid or expired token found in storage:", error);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        localStorage.removeItem("auth-storage");
       }
     }
     setIsLoading(false);

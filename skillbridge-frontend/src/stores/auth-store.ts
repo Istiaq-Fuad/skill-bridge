@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { apiClient, User } from "@/lib/api";
+import { clearAuthData, isValidJWTFormat } from "@/lib/auth-utils";
 
 interface AuthState {
   user: User | null;
@@ -108,6 +109,9 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => {
+        // Clear all auth data from localStorage
+        clearAuthData();
+
         set({
           user: null,
           token: null,
@@ -130,8 +134,38 @@ export const useAuthStore = create<AuthStore>()(
 
       hydrate: () => {
         const { token, user } = get();
-        if (token && user) {
-          set({ isAuthenticated: true, isLoading: false });
+
+        // Validate token format and expiration before using it
+        if (token && user && isValidJWTFormat(token)) {
+          try {
+            // Check if token is expired
+            const parts = token.split(".");
+            const payload = JSON.parse(
+              atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
+            );
+
+            if (payload.exp && payload.exp * 1000 > Date.now()) {
+              set({ isAuthenticated: true, isLoading: false });
+            } else {
+              // Token expired, clear auth data
+              clearAuthData();
+              set({
+                user: null,
+                token: null,
+                isAuthenticated: false,
+                isLoading: false,
+              });
+            }
+          } catch {
+            // Invalid token, clear auth data
+            clearAuthData();
+            set({
+              user: null,
+              token: null,
+              isAuthenticated: false,
+              isLoading: false,
+            });
+          }
         } else {
           set({ isAuthenticated: false, isLoading: false });
         }

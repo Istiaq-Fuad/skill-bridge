@@ -5,7 +5,7 @@ import org.jobai.skillbridge.model.JobPost;
 import org.jobai.skillbridge.model.User;
 import org.jobai.skillbridge.service.ApplicationService;
 import org.jobai.skillbridge.service.JobService;
-import org.jobai.skillbridge.service.UserService;
+// import org.jobai.skillbridge.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,8 +22,8 @@ public class ApplicationController {
     @Autowired
     private ApplicationService applicationService;
 
-    @Autowired
-    private UserService userService;
+    // @Autowired
+    // private UserService userService;
 
     @Autowired
     private JobService jobService;
