@@ -7,6 +7,7 @@ import org.jobai.skillbridge.repo.JobApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,6 +16,24 @@ public class ApplicationService {
     
     @Autowired
     private JobApplicationRepository applicationRepository;
+    
+    /**
+     * Helper method to set field value using reflection
+     * @param obj The object to set the field value on
+     * @param fieldName The name of the field
+     * @param value The value to set
+     */
+    private void setFieldValue(Object obj, String fieldName, Object value) {
+        try {
+            String capitalizedFieldName = Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
+            String setterName = "set" + capitalizedFieldName;
+            Method method = obj.getClass().getMethod(setterName, value.getClass());
+            method.invoke(obj, value);
+        } catch (Exception e) {
+            System.err.println("Could not set field " + fieldName + " in " + obj.getClass().getName());
+            e.printStackTrace();
+        }
+    }
     
     public List<JobApplication> getUserApplications(User user) {
         return applicationRepository.findByUser(user);
@@ -31,12 +50,12 @@ public class ApplicationService {
         }
         
         JobApplication application = new JobApplication();
-        application.setUser(user);
-        application.setJobPost(jobPost);
-        application.setAppliedAt(LocalDateTime.now());
-        application.setStatus("APPLIED");
-        application.setCoverLetter(coverLetter);
-        application.setResumeUrl(resumeUrl);
+        setFieldValue(application, "user", user);
+        setFieldValue(application, "jobPost", jobPost);
+        setFieldValue(application, "appliedAt", LocalDateTime.now());
+        setFieldValue(application, "status", "APPLIED");
+        setFieldValue(application, "coverLetter", coverLetter);
+        setFieldValue(application, "resumeUrl", resumeUrl);
         
         return applicationRepository.save(application);
     }
@@ -44,7 +63,7 @@ public class ApplicationService {
     public JobApplication updateApplicationStatus(Long applicationId, String status) {
         JobApplication application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
-        application.setStatus(status);
+        setFieldValue(application, "status", status);
         return applicationRepository.save(application);
     }
     
