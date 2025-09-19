@@ -114,6 +114,21 @@ class ApiClient {
   protected getAuthHeader(): Record<string, string> {
     // Check if we're in a browser environment first
     if (typeof window !== "undefined") {
+      // Try to get token from Zustand store first
+      try {
+        const authStorage = localStorage.getItem("auth-storage");
+        if (authStorage) {
+          const parsedAuth = JSON.parse(authStorage);
+          const token = parsedAuth?.state?.token;
+          if (token && token.trim()) {
+            return { Authorization: `Bearer ${token}` };
+          }
+        }
+      } catch (e) {
+        console.error("Error reading auth token:", e);
+      }
+
+      // Fallback to simple token key for backward compatibility
       const token = localStorage.getItem("token");
       if (token && token.trim()) {
         return { Authorization: `Bearer ${token}` };
@@ -145,6 +160,8 @@ class ApiClient {
           ...authHeaders,
           ...fetchOptions.headers,
         },
+        // Include credentials to send cookies
+        credentials: "include",
         // Simplified caching - let the calling code handle caching strategy
         cache: fetchOptions.method === "GET" ? "default" : "no-store",
         ...fetchOptions,
@@ -430,6 +447,17 @@ class ApiClient {
   ): Promise<ApiResponse<Portfolio>> {
     return this.request(`/profiles/${userId}/portfolio`, {
       method: "POST",
+      body: JSON.stringify(portfolio),
+    });
+  }
+
+  async updatePortfolio(
+    userId: number,
+    portfolioId: number,
+    portfolio: Partial<Portfolio>
+  ): Promise<ApiResponse<Portfolio>> {
+    return this.request(`/profiles/${userId}/portfolio/${portfolioId}`, {
+      method: "PUT",
       body: JSON.stringify(portfolio),
     });
   }

@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks";
-import { useJob, useApplyForJob } from "@/hooks/api";
+import { useJob, useApplyForJob, useUserApplications } from "@/hooks/api";
 import { useJobsStore } from "@/stores";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -46,8 +46,39 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
   const { user, isLoading: authLoading } = useAuth();
   const { job } = useJob(parseInt(resolvedParams.id));
   const { applyForJob } = useApplyForJob();
+  const {
+    userApplications,
+    isLoading: applicationsLoading,
+    refreshUserApplications,
+  } = useUserApplications(user?.id || 0);
   const { isLoading: jobLoading, error: jobError } = useJobsStore();
   const router = useRouter();
+
+  const jobId = parseInt(resolvedParams.id);
+
+  // Check if user has already applied to this job
+  const hasApplied = userApplications.some((application) => {
+    console.log("Checking application:", application);
+    console.log(
+      "Application jobId:",
+      application.jobId,
+      "Current jobId:",
+      jobId
+    );
+    return application.jobId === jobId;
+  });
+
+  // Reset applied state when job changes
+  useEffect(() => {
+    setApplied(false);
+  }, [resolvedParams.id]);
+
+  // Update applied state when hasApplied changes (from API data)
+  useEffect(() => {
+    if (hasApplied && !applied) {
+      setApplied(true);
+    }
+  }, [hasApplied, applied]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -72,6 +103,8 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
       if (result.success) {
         setApplied(true);
         setShowApplicationDialog(false);
+        // Refresh user applications to update the hasApplied status
+        await refreshUserApplications();
         toast.success("Application submitted successfully!");
       } else {
         toast.error(result.error || "Failed to submit application");
@@ -167,13 +200,19 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
               <div className="flex flex-col gap-3">
                 {user.role === "JOB_SEEKER" && (
                   <>
-                    {applied ? (
+                    {hasApplied || applied ? (
                       <Alert className="border-green-200 bg-green-50">
                         <CheckCircle className="h-4 w-4 text-green-600" />
                         <AlertDescription className="text-green-800">
-                          Application submitted successfully!
+                          {hasApplied
+                            ? "You have already applied to this job"
+                            : "Application submitted successfully!"}
                         </AlertDescription>
                       </Alert>
+                    ) : applicationsLoading ? (
+                      <Button size="lg" className="w-full lg:w-auto" disabled>
+                        Checking application status...
+                      </Button>
                     ) : (
                       <Dialog
                         open={showApplicationDialog}

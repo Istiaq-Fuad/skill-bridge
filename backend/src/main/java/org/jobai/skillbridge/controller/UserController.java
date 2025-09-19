@@ -15,6 +15,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,7 +38,7 @@ public class UserController {
     private PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
+    public ResponseEntity<?> registerUser(@RequestBody User user, HttpServletResponse response) {
         try {
             if (user.getUsername() == null || user.getUsername().isBlank()) {
                 return ResponseEntity.badRequest().body("Username is required");
@@ -57,6 +60,15 @@ public class UserController {
 
             // Generate JWT token for the newly registered user
             final String jwt = jwtUtil.generateToken(savedUser);
+
+            // Set JWT as HTTP-only cookie for better security
+            Cookie jwtCookie = new Cookie("jwt", jwt);
+            jwtCookie.setHttpOnly(true);
+            jwtCookie.setSecure(false); // Set to true in production with HTTPS
+            jwtCookie.setPath("/");
+            jwtCookie.setMaxAge(24 * 60 * 60); // 24 hours
+            response.addCookie(jwtCookie);
+
             return ResponseEntity.ok(new AuthResponse(jwt, UserDTO.fromEntity(savedUser)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
@@ -64,7 +76,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody User user) {
+    public ResponseEntity<?> loginUser(@RequestBody User user, HttpServletResponse response) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
@@ -72,6 +84,15 @@ public class UserController {
             final UserDetails userDetails = userService.loadUserByUsername(user.getUsername());
             final String jwt = jwtUtil.generateToken((User) userDetails);
             User userData = (User) userDetails;
+
+            // Set JWT as HTTP-only cookie for better security
+            Cookie jwtCookie = new Cookie("jwt", jwt);
+            jwtCookie.setHttpOnly(true);
+            jwtCookie.setSecure(false); // Set to true in production with HTTPS
+            jwtCookie.setPath("/");
+            jwtCookie.setMaxAge(24 * 60 * 60); // 24 hours
+            response.addCookie(jwtCookie);
+
             return ResponseEntity.ok(new AuthResponse(jwt, UserDTO.fromEntity(userData)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Invalid username or password");
@@ -148,12 +169,16 @@ public class UserController {
     }
 
     @PutMapping("/profile/employer")
-    public ResponseEntity<User> updateEmployerProfile(@RequestBody User userDetails, Authentication authentication) {
+    public ResponseEntity<?> updateEmployerProfile(@RequestBody User userDetails, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).body("Authentication required");
+        }
+
         User currentUser = (User) authentication.getPrincipal();
 
         // Verify user is an employer
         if (!"EMPLOYER".equals(currentUser.getRole().name())) {
-            return ResponseEntity.status(403).build();
+            return ResponseEntity.status(403).body("Access denied: Only employers can update employer profile");
         }
 
         // Update employer-specific fields
@@ -221,5 +246,18 @@ public class UserController {
 
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        // Clear the JWT cookie
+        Cookie jwtCookie = new Cookie("jwt", null);
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(false); // Set to true in production with HTTPS
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(0); // Expire immediately
+        response.addCookie(jwtCookie);
+
+        return ResponseEntity.ok("Logged out successfully");
     }
 }

@@ -18,7 +18,10 @@ public class Skill {
 
     private String name;
     private String category;
-    private int proficiencyLevel; // 1-10 scale
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "proficiency_level")
+    private SkillLevel level; // BEGINNER, INTERMEDIATE, ADVANCED, EXPERT
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

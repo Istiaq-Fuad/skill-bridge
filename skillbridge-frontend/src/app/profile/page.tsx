@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -28,7 +29,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Profile, Skill, apiClient } from "@/lib/api";
+import {
+  Profile,
+  Skill,
+  Education,
+  Experience,
+  Portfolio,
+  apiClient,
+} from "@/lib/api";
 import {
   User,
   BookOpen,
@@ -55,12 +63,47 @@ export default function ProfilePage() {
 
   // Form states
   const [showSkillDialog, setShowSkillDialog] = useState(false);
+  const [showEducationDialog, setShowEducationDialog] = useState(false);
+  const [showExperienceDialog, setShowExperienceDialog] = useState(false);
+  const [showPortfolioDialog, setShowPortfolioDialog] = useState(false);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [isUpdatingBio, setIsUpdatingBio] = useState(false);
 
   const [skillForm, setSkillForm] = useState<Omit<Skill, "id">>({
     name: "",
     level: "BEGINNER",
   });
+
+  const [educationForm, setEducationForm] = useState({
+    institution: "",
+    degree: "",
+    fieldOfStudy: "",
+    startDate: "",
+    endDate: "",
+    description: "",
+  });
+
+  const [experienceForm, setExperienceForm] = useState({
+    company: "",
+    position: "",
+    startDate: "",
+    endDate: "",
+    description: "",
+    current: false,
+  });
+
+  const [portfolioForm, setPortfolioForm] = useState({
+    title: "",
+    description: "",
+    url: "",
+    technologies: [] as string[],
+    imageUrl: "",
+  });
+
+  const [editingItem, setEditingItem] = useState<{
+    type: "education" | "experience" | "portfolio";
+    id: number;
+  } | null>(null);
 
   // Employer profile form states
   const [employerForm, setEmployerForm] = useState({
@@ -168,6 +211,286 @@ export default function ProfilePage() {
     }
   };
 
+  const handleUpdateBio = async () => {
+    if (!user || !profile) return;
+
+    try {
+      setIsUpdatingBio(true);
+      const response = await apiClient.updateUserProfile(user.id, {
+        bio: profile.bio,
+      });
+
+      if (response.success) {
+        toast.success("Bio updated successfully");
+      } else {
+        toast.error("Failed to update bio");
+      }
+    } catch {
+      toast.error("Error updating bio");
+    } finally {
+      setIsUpdatingBio(false);
+    }
+  };
+
+  const handleAddEducation = async () => {
+    if (!user) return;
+
+    try {
+      const response = await apiClient.addEducation(user.id, educationForm);
+      if (response.success && response.data) {
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                education: [...prev.education, response.data!],
+              }
+            : null
+        );
+        setEducationForm({
+          institution: "",
+          degree: "",
+          fieldOfStudy: "",
+          startDate: "",
+          endDate: "",
+          description: "",
+        });
+        setShowEducationDialog(false);
+        toast.success("Education added successfully");
+      } else {
+        toast.error("Failed to add education");
+      }
+    } catch {
+      toast.error("Error adding education");
+    }
+  };
+
+  const handleUpdateEducation = async () => {
+    if (!user || !editingItem || editingItem.type !== "education") return;
+
+    try {
+      const response = await apiClient.updateEducation(
+        user.id,
+        editingItem.id,
+        educationForm
+      );
+      if (response.success && response.data) {
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                education: prev.education.map((edu) =>
+                  edu.id === editingItem.id ? response.data! : edu
+                ),
+              }
+            : null
+        );
+        setEditingItem(null);
+        setShowEducationDialog(false);
+        toast.success("Education updated successfully");
+      } else {
+        toast.error("Failed to update education");
+      }
+    } catch {
+      toast.error("Error updating education");
+    }
+  };
+
+  const handleDeleteEducation = async (eduId: number) => {
+    if (!user) return;
+
+    try {
+      const response = await apiClient.deleteEducation(user.id, eduId);
+      if (response.success) {
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                education: prev.education.filter((edu) => edu.id !== eduId),
+              }
+            : null
+        );
+        toast.success("Education deleted");
+      } else {
+        toast.error("Failed to delete education");
+      }
+    } catch {
+      toast.error("Error deleting education");
+    }
+  };
+
+  const handleAddExperience = async () => {
+    if (!user) return;
+
+    try {
+      const response = await apiClient.addExperience(user.id, experienceForm);
+      if (response.success && response.data) {
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                experience: [...prev.experience, response.data!],
+              }
+            : null
+        );
+        setExperienceForm({
+          company: "",
+          position: "",
+          startDate: "",
+          endDate: "",
+          description: "",
+          current: false,
+        });
+        setShowExperienceDialog(false);
+        toast.success("Experience added successfully");
+      } else {
+        toast.error("Failed to add experience");
+      }
+    } catch {
+      toast.error("Error adding experience");
+    }
+  };
+
+  const handleUpdateExperience = async () => {
+    if (!user || !editingItem || editingItem.type !== "experience") return;
+
+    try {
+      const response = await apiClient.updateExperience(
+        user.id,
+        editingItem.id,
+        experienceForm
+      );
+      if (response.success && response.data) {
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                experience: prev.experience.map((exp) =>
+                  exp.id === editingItem.id ? response.data! : exp
+                ),
+              }
+            : null
+        );
+        setEditingItem(null);
+        setShowExperienceDialog(false);
+        toast.success("Experience updated successfully");
+      } else {
+        toast.error("Failed to update experience");
+      }
+    } catch {
+      toast.error("Error updating experience");
+    }
+  };
+
+  const handleDeleteExperience = async (expId: number) => {
+    if (!user) return;
+
+    try {
+      const response = await apiClient.deleteExperience(user.id, expId);
+      if (response.success) {
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                experience: prev.experience.filter((exp) => exp.id !== expId),
+              }
+            : null
+        );
+        toast.success("Experience deleted");
+      } else {
+        toast.error("Failed to delete experience");
+      }
+    } catch {
+      toast.error("Error deleting experience");
+    }
+  };
+
+  const handleAddPortfolio = async () => {
+    if (!user) return;
+
+    try {
+      const response = await apiClient.addPortfolio(user.id, portfolioForm);
+      if (response.success && response.data) {
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                portfolio: [...prev.portfolio, response.data!],
+              }
+            : null
+        );
+        setPortfolioForm({
+          title: "",
+          description: "",
+          url: "",
+          technologies: [],
+          imageUrl: "",
+        });
+        setShowPortfolioDialog(false);
+        toast.success("Portfolio item added successfully");
+      } else {
+        toast.error("Failed to add portfolio item");
+      }
+    } catch {
+      toast.error("Error adding portfolio item");
+    }
+  };
+
+  const handleUpdatePortfolio = async () => {
+    if (!user || !editingItem || editingItem.type !== "portfolio") return;
+
+    try {
+      const response = await apiClient.updatePortfolio(
+        user.id,
+        editingItem.id,
+        portfolioForm
+      );
+      if (response.success && response.data) {
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                portfolio: prev.portfolio.map((item) =>
+                  item.id === editingItem.id ? response.data! : item
+                ),
+              }
+            : null
+        );
+        setEditingItem(null);
+        setShowPortfolioDialog(false);
+        toast.success("Portfolio item updated successfully");
+      } else {
+        toast.error("Failed to update portfolio item");
+      }
+    } catch {
+      toast.error("Error updating portfolio item");
+    }
+  };
+
+  const handleDeletePortfolio = async (portfolioId: number) => {
+    if (!user) return;
+
+    try {
+      const response = await apiClient.deletePortfolio(user.id, portfolioId);
+      if (response.success) {
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                portfolio: prev.portfolio.filter(
+                  (item) => item.id !== portfolioId
+                ),
+              }
+            : null
+        );
+        toast.success("Portfolio item deleted");
+      } else {
+        toast.error("Failed to delete portfolio item");
+      }
+    } catch {
+      toast.error("Error deleting portfolio item");
+    }
+  };
+
   const handleUpdateEmployerProfile = async () => {
     if (!user || user.role !== "EMPLOYER") return;
 
@@ -199,6 +522,45 @@ export default function ProfilePage() {
     } finally {
       setIsUpdatingProfile(false);
     }
+  };
+
+  // Helper functions for editing
+  const startEditingEducation = (education: Education) => {
+    setEducationForm({
+      institution: education.institution || "",
+      degree: education.degree || "",
+      fieldOfStudy: education.fieldOfStudy || "",
+      startDate: education.startDate || "",
+      endDate: education.endDate || "",
+      description: education.description || "",
+    });
+    setEditingItem({ type: "education", id: education.id });
+    setShowEducationDialog(true);
+  };
+
+  const startEditingExperience = (experience: Experience) => {
+    setExperienceForm({
+      company: experience.company || "",
+      position: experience.position || "",
+      startDate: experience.startDate || "",
+      endDate: experience.endDate || "",
+      description: experience.description || "",
+      current: experience.current || false,
+    });
+    setEditingItem({ type: "experience", id: experience.id });
+    setShowExperienceDialog(true);
+  };
+
+  const startEditingPortfolio = (portfolio: Portfolio) => {
+    setPortfolioForm({
+      title: portfolio.title || "",
+      description: portfolio.description || "",
+      url: portfolio.url || "",
+      technologies: portfolio.technologies || [],
+      imageUrl: portfolio.imageUrl || "",
+    });
+    setEditingItem({ type: "portfolio", id: portfolio.id });
+    setShowPortfolioDialog(true);
   };
 
   if (isLoading || loading) {
@@ -342,7 +704,14 @@ export default function ProfilePage() {
                           className="mt-1"
                         />
                       </div>
-                      <Button>Save Changes</Button>
+                      <Button
+                        onClick={handleUpdateBio}
+                        disabled={isUpdatingBio}
+                        className="flex items-center gap-2"
+                      >
+                        <Save className="h-4 w-4" />
+                        {isUpdatingBio ? "Saving..." : "Save Changes"}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -474,10 +843,143 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Education</CardTitle>
-                  <Button size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Education
-                  </Button>
+                  <Dialog
+                    open={showEducationDialog}
+                    onOpenChange={setShowEducationDialog}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setEditingItem(null);
+                          setEducationForm({
+                            institution: "",
+                            degree: "",
+                            fieldOfStudy: "",
+                            startDate: "",
+                            endDate: "",
+                            description: "",
+                          });
+                        }}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Education
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[525px]">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingItem ? "Edit Education" : "Add Education"}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Add your educational background to showcase your
+                          qualifications.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="institution">Institution</Label>
+                            <Input
+                              id="institution"
+                              value={educationForm.institution}
+                              onChange={(e) =>
+                                setEducationForm((prev) => ({
+                                  ...prev,
+                                  institution: e.target.value,
+                                }))
+                              }
+                              placeholder="University name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="degree">Degree</Label>
+                            <Input
+                              id="degree"
+                              value={educationForm.degree}
+                              onChange={(e) =>
+                                setEducationForm((prev) => ({
+                                  ...prev,
+                                  degree: e.target.value,
+                                }))
+                              }
+                              placeholder="Bachelor's, Master's, etc."
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="fieldOfStudy">Field of Study</Label>
+                          <Input
+                            id="fieldOfStudy"
+                            value={educationForm.fieldOfStudy}
+                            onChange={(e) =>
+                              setEducationForm((prev) => ({
+                                ...prev,
+                                fieldOfStudy: e.target.value,
+                              }))
+                            }
+                            placeholder="Computer Science, Business, etc."
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="startDate">Start Date</Label>
+                            <Input
+                              id="startDate"
+                              type="date"
+                              value={educationForm.startDate}
+                              onChange={(e) =>
+                                setEducationForm((prev) => ({
+                                  ...prev,
+                                  startDate: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="endDate">End Date</Label>
+                            <Input
+                              id="endDate"
+                              type="date"
+                              value={educationForm.endDate}
+                              onChange={(e) =>
+                                setEducationForm((prev) => ({
+                                  ...prev,
+                                  endDate: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="description">Description</Label>
+                          <Textarea
+                            id="description"
+                            value={educationForm.description}
+                            onChange={(e) =>
+                              setEducationForm((prev) => ({
+                                ...prev,
+                                description: e.target.value,
+                              }))
+                            }
+                            placeholder="Relevant coursework, achievements, etc."
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          type="submit"
+                          onClick={
+                            editingItem
+                              ? handleUpdateEducation
+                              : handleAddEducation
+                          }
+                        >
+                          {editingItem ? "Update Education" : "Add Education"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardHeader>
                 <CardContent>
                   {profile?.education.length === 0 ? (
@@ -507,13 +1009,18 @@ export default function ProfilePage() {
                               )}
                             </div>
                             <div className="flex gap-2">
-                              <Button variant="ghost" size="sm">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEditingEducation(edu)}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="text-red-600"
+                                onClick={() => handleDeleteEducation(edu.id)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -534,10 +1041,144 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Work Experience</CardTitle>
-                  <Button size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Experience
-                  </Button>
+                  <Dialog
+                    open={showExperienceDialog}
+                    onOpenChange={setShowExperienceDialog}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setEditingItem(null);
+                          setExperienceForm({
+                            company: "",
+                            position: "",
+                            startDate: "",
+                            endDate: "",
+                            description: "",
+                            current: false,
+                          });
+                        }}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Experience
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[525px]">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingItem ? "Edit Experience" : "Add Experience"}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Add your work experience to showcase your professional
+                          background.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="company">Company</Label>
+                            <Input
+                              id="company"
+                              value={experienceForm.company}
+                              onChange={(e) =>
+                                setExperienceForm((prev) => ({
+                                  ...prev,
+                                  company: e.target.value,
+                                }))
+                              }
+                              placeholder="Company name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="position">Position</Label>
+                            <Input
+                              id="position"
+                              value={experienceForm.position}
+                              onChange={(e) =>
+                                setExperienceForm((prev) => ({
+                                  ...prev,
+                                  position: e.target.value,
+                                }))
+                              }
+                              placeholder="Job title"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="startDate">Start Date</Label>
+                            <Input
+                              id="startDate"
+                              type="date"
+                              value={experienceForm.startDate}
+                              onChange={(e) =>
+                                setExperienceForm((prev) => ({
+                                  ...prev,
+                                  startDate: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="endDate">End Date</Label>
+                            <Input
+                              id="endDate"
+                              type="date"
+                              value={experienceForm.endDate}
+                              onChange={(e) =>
+                                setExperienceForm((prev) => ({
+                                  ...prev,
+                                  endDate: e.target.value,
+                                }))
+                              }
+                              disabled={experienceForm.current}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="current"
+                            checked={experienceForm.current}
+                            onCheckedChange={(checked) =>
+                              setExperienceForm((prev) => ({
+                                ...prev,
+                                current: checked === true,
+                                endDate: checked ? "" : prev.endDate,
+                              }))
+                            }
+                          />
+                          <Label htmlFor="current">I currently work here</Label>
+                        </div>
+                        <div>
+                          <Label htmlFor="description">Description</Label>
+                          <Textarea
+                            id="description"
+                            value={experienceForm.description}
+                            onChange={(e) =>
+                              setExperienceForm((prev) => ({
+                                ...prev,
+                                description: e.target.value,
+                              }))
+                            }
+                            placeholder="Describe your responsibilities and achievements..."
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          type="submit"
+                          onClick={
+                            editingItem
+                              ? handleUpdateExperience
+                              : handleAddExperience
+                          }
+                        >
+                          {editingItem ? "Update Experience" : "Add Experience"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardHeader>
                 <CardContent>
                   {profile?.experience.length === 0 ? (
@@ -565,13 +1206,18 @@ export default function ProfilePage() {
                               )}
                             </div>
                             <div className="flex gap-2">
-                              <Button variant="ghost" size="sm">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEditingExperience(exp)}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="text-red-600"
+                                onClick={() => handleDeleteExperience(exp.id)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -592,10 +1238,131 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Portfolio</CardTitle>
-                  <Button size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Project
-                  </Button>
+                  <Dialog
+                    open={showPortfolioDialog}
+                    onOpenChange={setShowPortfolioDialog}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setEditingItem(null);
+                          setPortfolioForm({
+                            title: "",
+                            description: "",
+                            url: "",
+                            technologies: [],
+                            imageUrl: "",
+                          });
+                        }}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Project
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[525px]">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingItem
+                            ? "Edit Portfolio Item"
+                            : "Add Portfolio Item"}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Showcase your projects and work to potential
+                          employers.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div>
+                          <Label htmlFor="title">Project Title</Label>
+                          <Input
+                            id="title"
+                            value={portfolioForm.title}
+                            onChange={(e) =>
+                              setPortfolioForm((prev) => ({
+                                ...prev,
+                                title: e.target.value,
+                              }))
+                            }
+                            placeholder="Project name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="description">Description</Label>
+                          <Textarea
+                            id="description"
+                            value={portfolioForm.description}
+                            onChange={(e) =>
+                              setPortfolioForm((prev) => ({
+                                ...prev,
+                                description: e.target.value,
+                              }))
+                            }
+                            placeholder="Describe your project..."
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="url">Project URL</Label>
+                          <Input
+                            id="url"
+                            value={portfolioForm.url}
+                            onChange={(e) =>
+                              setPortfolioForm((prev) => ({
+                                ...prev,
+                                url: e.target.value,
+                              }))
+                            }
+                            placeholder="https://your-project.com"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="technologies">Technologies</Label>
+                          <Input
+                            id="technologies"
+                            value={portfolioForm.technologies.join(", ")}
+                            onChange={(e) =>
+                              setPortfolioForm((prev) => ({
+                                ...prev,
+                                technologies: e.target.value
+                                  .split(",")
+                                  .map((tech) => tech.trim())
+                                  .filter((tech) => tech),
+                              }))
+                            }
+                            placeholder="React, Node.js, MongoDB (comma-separated)"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="imageUrl">Image URL</Label>
+                          <Input
+                            id="imageUrl"
+                            value={portfolioForm.imageUrl}
+                            onChange={(e) =>
+                              setPortfolioForm((prev) => ({
+                                ...prev,
+                                imageUrl: e.target.value,
+                              }))
+                            }
+                            placeholder="https://image-url.com/screenshot.png"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          type="submit"
+                          onClick={
+                            editingItem
+                              ? handleUpdatePortfolio
+                              : handleAddPortfolio
+                          }
+                        >
+                          {editingItem
+                            ? "Update Portfolio Item"
+                            : "Add Portfolio Item"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardHeader>
                 <CardContent>
                   {profile?.portfolio.length === 0 ? (
@@ -609,13 +1376,18 @@ export default function ProfilePage() {
                           <div className="flex justify-between items-start mb-2">
                             <h3 className="font-semibold">{item.title}</h3>
                             <div className="flex gap-2">
-                              <Button variant="ghost" size="sm">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEditingPortfolio(item)}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="text-red-600"
+                                onClick={() => handleDeletePortfolio(item.id)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

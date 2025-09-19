@@ -305,6 +305,18 @@ public class ProfileController {
         return ResponseEntity.ok(profileService.savePortfolio(portfolio));
     }
 
+    @PutMapping("/{userId}/portfolio/{portfolioId}")
+    public ResponseEntity<Portfolio> updateUserPortfolio(@PathVariable Long userId, @PathVariable Long portfolioId,
+            @RequestBody Portfolio portfolio, Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+        if (!currentUser.getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        portfolio.setId(portfolioId);
+        portfolio.setUser(currentUser);
+        return ResponseEntity.ok(profileService.savePortfolio(portfolio));
+    }
+
     @DeleteMapping("/{userId}/portfolio/{portfolioId}")
     public ResponseEntity<Void> deleteUserPortfolio(@PathVariable Long userId, @PathVariable Long portfolioId,
             Authentication authentication) {

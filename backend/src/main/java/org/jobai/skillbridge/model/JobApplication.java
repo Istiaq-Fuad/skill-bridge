@@ -2,6 +2,7 @@ package org.jobai.skillbridge.model;
 
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,4 +36,16 @@ public class JobApplication {
     private String coverLetter;
 
     private String resumeUrl;
+
+    // Expose jobId for frontend without exposing the full jobPost object
+    @JsonProperty("jobId")
+    public Integer getJobId() {
+        return jobPost != null ? jobPost.getId() : null;
+    }
+
+    // Expose userId for frontend without exposing the full user object
+    @JsonProperty("userId")
+    public Long getUserId() {
+        return user != null ? user.getId() : null;
+    }
 }
