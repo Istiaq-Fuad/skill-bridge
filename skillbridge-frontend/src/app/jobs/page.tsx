@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, useJobs } from "@/hooks";
+import { useJobsStore } from "@/stores";
+import { useApiReady } from "@/hooks/use-api-ready";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +17,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Job, apiClient } from "@/lib/api";
 import {
   Search,
   MapPin,
@@ -24,49 +25,54 @@ import {
   Calendar,
   Plus,
 } from "lucide-react";
-import { toast } from "sonner";
+
 import Link from "next/link";
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
-  const { user, isLoading } = useAuth();
+  const [hasInitiallyFetched, setHasInitiallyFetched] = useState(false);
+  const { user, isLoading: authLoading } = useAuth();
+  const { jobs, isLoading: jobsLoading, error, fetchJobs } = useJobs();
+  const { setSearchFilters } = useJobsStore();
+  const { isReady: apiReady } = useApiReady(true); // Require auth for jobs
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!authLoading && !user) {
       router.push("/login");
       return;
     }
-    if (user) {
+  }, [user, authLoading, router]);
+
+  // Initial fetch effect - wait for API to be ready
+  useEffect(() => {
+    if (
+      apiReady &&
+      !hasInitiallyFetched &&
+      jobs.length === 0 &&
+      !jobsLoading &&
+      !error
+    ) {
+      setHasInitiallyFetched(true);
       fetchJobs();
     }
-  }, [user, isLoading, router]);
-
-  const fetchJobs = async (search?: string, location?: string) => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getJobs({
-        search: search || undefined,
-        location: location || undefined,
-      });
-
-      if (response.success && response.data) {
-        setJobs(response.data);
-      } else {
-        toast.error("Failed to fetch jobs");
-      }
-    } catch {
-      toast.error("Error fetching jobs");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [
+    apiReady,
+    hasInitiallyFetched,
+    jobs.length,
+    jobsLoading,
+    error,
+    fetchJobs,
+  ]);
 
   const handleSearch = () => {
-    fetchJobs(searchTerm, locationFilter);
+    const filters = {
+      search: searchTerm || undefined,
+      location: locationFilter || undefined,
+    };
+    setSearchFilters(filters);
+    fetchJobs(filters);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -75,7 +81,7 @@ export default function JobsPage() {
     }
   };
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -93,8 +99,8 @@ export default function JobsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Jobs</h1>
-            <p className="text-gray-600">
+            <h1 className="text-2xl font-bold text-foreground">Jobs</h1>
+            <p className="text-muted-foreground">
               {user.role === "JOB_SEEKER"
                 ? "Find your next opportunity"
                 : "Manage your job postings"}
@@ -123,7 +129,7 @@ export default function JobsPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Job title, keywords, or company"
                     value={searchTerm}
@@ -135,7 +141,7 @@ export default function JobsPage() {
               </div>
               <div className="flex-1">
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Location"
                     value={locationFilter}
@@ -154,7 +160,23 @@ export default function JobsPage() {
 
         {/* Results */}
         <div className="space-y-4">
-          {loading ? (
+          {error && (
+            <Card>
+              <CardContent className="text-center py-12">
+                <div className="w-12 h-12 bg-destructive/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Search className="h-6 w-6 text-destructive" />
+                </div>
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  Error loading jobs
+                </h3>
+                <p className="text-muted-foreground mb-4">{error}</p>
+                <Button onClick={() => fetchJobs()} variant="outline">
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {!error && jobsLoading ? (
             // Loading skeletons
             Array.from({ length: 5 }).map((_, i) => (
               <Card key={i}>
@@ -180,16 +202,16 @@ export default function JobsPage() {
                 </CardContent>
               </Card>
             ))
-          ) : jobs.length === 0 ? (
+          ) : !error && jobs.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Search className="h-6 w-6 text-gray-400" />
+                <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Search className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-medium text-foreground mb-2">
                   No jobs found
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Try adjusting your search criteria or check back later for new
                   opportunities.
                 </p>
@@ -214,7 +236,7 @@ export default function JobsPage() {
                           {job.title}
                         </Link>
                       </CardTitle>
-                      <div className="flex items-center text-gray-600 space-x-4 text-sm">
+                      <div className="flex items-center text-muted-foreground space-x-4 text-sm">
                         <div className="flex items-center">
                           <Building className="h-4 w-4 mr-1" />
                           {job.company}
@@ -232,7 +254,7 @@ export default function JobsPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="flex items-center text-sm text-gray-500 mb-2">
+                      <div className="flex items-center text-sm text-muted-foreground mb-2">
                         <Calendar className="h-4 w-4 mr-1" />
                         {new Date(job.createdAt).toLocaleDateString()}
                       </div>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import {
@@ -26,6 +26,7 @@ import {
   Plus,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -55,22 +56,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/80 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r shadow-lg transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}
+        } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:relative lg:flex lg:flex-col lg:w-64 flex flex-col`}
       >
-        <div className="flex items-center justify-between h-16 px-6 border-b">
+        <div className="flex items-center justify-between h-16 px-6 border-b flex-shrink-0">
           <Link href="/dashboard" className="text-xl font-bold text-primary">
             SkillBridge
           </Link>
@@ -84,7 +85,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </Button>
         </div>
 
-        <nav className="mt-6 px-3">
+        <nav className="flex-1 mt-6 px-3 overflow-y-auto">
           <div className="space-y-1">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
@@ -95,7 +96,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive
                       ? "bg-primary text-primary-foreground"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      : "text-foreground hover:bg-accent hover:text-accent-foreground"
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
@@ -109,9 +110,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Top navbar */}
-        <div className="sticky top-0 z-30 bg-white shadow-sm border-b">
+        <div className="flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm border-b">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">
             <Button
               variant="ghost"
@@ -123,6 +124,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Button>
 
             <div className="ml-auto flex items-center space-x-4">
+              <ThemeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -174,7 +176,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Page content */}
-        <main className="p-4 sm:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">{children}</div>
+        </main>
       </div>
     </div>
   );

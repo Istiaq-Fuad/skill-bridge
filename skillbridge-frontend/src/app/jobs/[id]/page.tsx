@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks";
+import { useJob, useApplyForJob, useUserApplications } from "@/hooks/api";
+import { useJobsStore } from "@/stores";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +20,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Job, apiClient } from "@/lib/api";
 import {
   ArrowLeft,
   Building,
@@ -32,63 +33,81 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 interface JobDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function JobDetailPage({ params }: JobDetailPageProps) {
-  const [job, setJob] = useState<Job | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [applying, setApplying] = useState(false);
+  const resolvedParams = use(params);
   const [applied, setApplied] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [showApplicationDialog, setShowApplicationDialog] = useState(false);
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const { job } = useJob(parseInt(resolvedParams.id));
+  const { applyForJob } = useApplyForJob();
+  const {
+    userApplications,
+    isLoading: applicationsLoading,
+    refreshUserApplications,
+  } = useUserApplications(user?.id || 0);
+  const { isLoading: jobLoading, error: jobError } = useJobsStore();
   const router = useRouter();
 
-  const fetchJob = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getJob(parseInt(params.id));
+  const jobId = parseInt(resolvedParams.id);
 
-      if (response.success && response.data) {
-        setJob(response.data);
-      } else {
-        toast.error("Job not found");
-        router.push("/jobs");
-      }
-    } catch {
-      toast.error("Error fetching job details");
-      router.push("/jobs");
-    } finally {
-      setLoading(false);
+  // Check if user has already applied to this job
+  const hasApplied = userApplications.some((application) => {
+    console.log("Checking application:", application);
+    console.log(
+      "Application jobId:",
+      application.jobId,
+      "Current jobId:",
+      jobId
+    );
+    return application.jobId === jobId;
+  });
+
+  // Reset applied state when job changes
+  useEffect(() => {
+    setApplied(false);
+  }, [resolvedParams.id]);
+
+  // Update applied state when hasApplied changes (from API data)
+  useEffect(() => {
+    if (hasApplied && !applied) {
+      setApplied(true);
     }
-  }, [params.id, router]);
+  }, [hasApplied, applied]);
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!authLoading && !user) {
       router.push("/login");
       return;
     }
-    if (user && params.id) {
-      fetchJob();
-      // TODO: Check if user has already applied
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (jobError) {
+      toast.error("Error fetching job details");
+      router.push("/jobs");
     }
-  }, [user, isLoading, router, params.id, fetchJob]);
+  }, [jobError, router]);
 
   const handleApply = async () => {
     if (!job) return;
 
     try {
       setApplying(true);
-      const response = await apiClient.applyForJob(job.id);
-
-      if (response.success) {
+      const result = await applyForJob(job.id);
+      if (result.success) {
         setApplied(true);
         setShowApplicationDialog(false);
+        // Refresh user applications to update the hasApplied status
+        await refreshUserApplications();
         toast.success("Application submitted successfully!");
       } else {
-        toast.error(response.error || "Failed to submit application");
+        toast.error(result.error || "Failed to submit application");
       }
     } catch {
       toast.error("Error submitting application");
@@ -97,7 +116,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
     }
   };
 
-  if (isLoading || loading) {
+  if (authLoading || jobLoading) {
     return (
       <DashboardLayout>
         <div className="space-y-6">
@@ -152,7 +171,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
                 <CardTitle className="text-2xl lg:text-3xl mb-3">
                   {job.title}
                 </CardTitle>
-                <div className="flex flex-wrap items-center gap-4 text-gray-600">
+                <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
                   <div className="flex items-center">
                     <Building className="h-5 w-5 mr-2" />
                     <span className="font-medium">{job.company}</span>
@@ -181,13 +200,19 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
               <div className="flex flex-col gap-3">
                 {user.role === "JOB_SEEKER" && (
                   <>
-                    {applied ? (
+                    {hasApplied || applied ? (
                       <Alert className="border-green-200 bg-green-50">
                         <CheckCircle className="h-4 w-4 text-green-600" />
                         <AlertDescription className="text-green-800">
-                          Application submitted successfully!
+                          {hasApplied
+                            ? "You have already applied to this job"
+                            : "Application submitted successfully!"}
                         </AlertDescription>
                       </Alert>
+                    ) : applicationsLoading ? (
+                      <Button size="lg" className="w-full lg:w-auto" disabled>
+                        Checking application status...
+                      </Button>
                     ) : (
                       <Dialog
                         open={showApplicationDialog}
@@ -269,7 +294,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
               </CardHeader>
               <CardContent>
                 <div className="prose max-w-none">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-card-foreground leading-relaxed whitespace-pre-wrap">
                     {job.description}
                   </p>
                 </div>
@@ -287,7 +312,9 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
                     {job.requirements.map((requirement, index) => (
                       <div key={index} className="flex items-start">
                         <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                        <span className="text-gray-700">{requirement}</span>
+                        <span className="text-card-foreground">
+                          {requirement}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -305,32 +332,32 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <dt className="text-sm font-medium text-gray-500 mb-1">
+                  <dt className="text-sm font-medium text-muted-foreground mb-1">
                     Company
                   </dt>
-                  <dd className="text-sm text-gray-900">{job.company}</dd>
+                  <dd className="text-sm text-foreground">{job.company}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm font-medium text-gray-500 mb-1">
+                  <dt className="text-sm font-medium text-muted-foreground mb-1">
                     Location
                   </dt>
-                  <dd className="text-sm text-gray-900">{job.location}</dd>
+                  <dd className="text-sm text-foreground">{job.location}</dd>
                 </div>
                 {job.salary && (
                   <div>
-                    <dt className="text-sm font-medium text-gray-500 mb-1">
+                    <dt className="text-sm font-medium text-muted-foreground mb-1">
                       Salary
                     </dt>
-                    <dd className="text-sm text-gray-900">
+                    <dd className="text-sm text-foreground">
                       ${job.salary.toLocaleString()}/year
                     </dd>
                   </div>
                 )}
                 <div>
-                  <dt className="text-sm font-medium text-gray-500 mb-1">
+                  <dt className="text-sm font-medium text-muted-foreground mb-1">
                     Posted
                   </dt>
-                  <dd className="text-sm text-gray-900">
+                  <dd className="text-sm text-foreground">
                     {new Date(job.createdAt).toLocaleDateString()}
                   </dd>
                 </div>
@@ -365,7 +392,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
                 <CardTitle>Similar Jobs</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-6 text-gray-500">
+                <div className="text-center py-6 text-muted-foreground">
                   <p className="text-sm">No similar jobs found</p>
                 </div>
               </CardContent>

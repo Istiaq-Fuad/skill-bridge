@@ -31,10 +31,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Only access localStorage in browser environment
+    if (typeof window === "undefined") {
+      setIsLoading(false);
+      return;
+    }
+
     const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
 
-    if (storedToken && storedUser) {
+    if (storedToken && storedToken.trim() && storedUser) {
       setToken(storedToken);
       try {
         setUser(JSON.parse(storedUser));
@@ -54,8 +60,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { token: newToken, user: userData } = response.data;
         setToken(newToken);
         setUser(userData);
-        localStorage.setItem("token", newToken);
-        localStorage.setItem("user", JSON.stringify(userData));
+
+        // Only set localStorage in browser environment
+        if (typeof window !== "undefined") {
+          localStorage.setItem("token", newToken);
+          localStorage.setItem("user", JSON.stringify(userData));
+        }
         return { success: true };
       } else {
         return { success: false, error: response.error || "Login failed" };
@@ -83,8 +93,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { token: newToken, user: userData } = response.data;
         setToken(newToken);
         setUser(userData);
-        localStorage.setItem("token", newToken);
-        localStorage.setItem("user", JSON.stringify(userData));
+
+        // Only set localStorage in browser environment
+        if (typeof window !== "undefined") {
+          localStorage.setItem("token", newToken);
+          localStorage.setItem("user", JSON.stringify(userData));
+        }
         return { success: true };
       } else {
         return {
@@ -103,15 +117,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+
+    // Only access localStorage in browser environment
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    }
   };
 
   const updateUser = (userData: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      // Only set localStorage in browser environment
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
     }
   };
 
@@ -128,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
+export function useAuthContext() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");

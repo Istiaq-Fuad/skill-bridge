@@ -8,6 +8,13 @@ import java.util.List;
 
 @Repository
 public interface JobRepo extends JpaRepository<JobPost, Integer> {
+    // Legacy search method
     public List<JobPost> findByPostProfileContainingIgnoreCaseOrPostDescContainingIgnoreCase(String postProfile,
             String postDesc);
+
+    // New search methods for updated model
+    public List<JobPost> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrCompanyContainingIgnoreCase(
+            String title, String description, String company);
+
+    public List<JobPost> findByEmployerId(Integer employerId);
 }

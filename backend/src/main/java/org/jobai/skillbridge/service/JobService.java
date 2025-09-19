@@ -20,6 +20,10 @@ public class JobService {
         return repo.findById(id).orElse(null);
     }
 
+    public JobPost saveJob(JobPost job) {
+        return repo.save(job);
+    }
+
     public void addJob(JobPost job) {
         repo.save(job);
     }
@@ -33,6 +37,17 @@ public class JobService {
     }
 
     public List<JobPost> searchJobsByKeyword(String keyword) {
-        return repo.findByPostProfileContainingIgnoreCaseOrPostDescContainingIgnoreCase(keyword, keyword);
+        // Try new fields first, fallback to legacy fields
+        List<JobPost> results = repo
+                .findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrCompanyContainingIgnoreCase(keyword,
+                        keyword, keyword);
+        if (results.isEmpty()) {
+            results = repo.findByPostProfileContainingIgnoreCaseOrPostDescContainingIgnoreCase(keyword, keyword);
+        }
+        return results;
+    }
+
+    public List<JobPost> getJobsByEmployerId(Integer employerId) {
+        return repo.findByEmployerId(employerId);
     }
 }

@@ -1,6 +1,7 @@
 package org.jobai.skillbridge.controller;
 
-import org.jobai.skillbridge.model.LoginResponse;
+import org.jobai.skillbridge.dto.AuthResponse;
+import org.jobai.skillbridge.dto.UserDTO;
 import org.jobai.skillbridge.model.User;
 import org.jobai.skillbridge.service.UserService;
 import org.jobai.skillbridge.util.JwtUtil;
@@ -14,6 +15,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,29 +37,65 @@ public class UserController {
     private PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
-        if (userService.existsByUsername(user.getUsername())) {
-            return ResponseEntity.badRequest().body("Username is already taken!");
+    public ResponseEntity<?> registerUser(@RequestBody User user, HttpServletResponse response) {
+        try {
+            if (user.getUsername() == null || user.getUsername().isBlank()) {
+                return ResponseEntity.badRequest().body("Username is required");
+            }
+            if (user.getEmail() == null || user.getEmail().isBlank()) {
+                return ResponseEntity.badRequest().body("Email is required");
+            }
+            if (user.getPassword() == null || user.getPassword().isBlank()) {
+                return ResponseEntity.badRequest().body("Password is required");
+            }
+            if (userService.existsByUsername(user.getUsername())) {
+                return ResponseEntity.badRequest().body("Username is already taken!");
+            }
+            if (userService.existsByEmail(user.getEmail())) {
+                return ResponseEntity.badRequest().body("Email is already in use!");
+            }
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            User savedUser = userService.saveUser(user);
+
+            // Generate JWT token for the newly registered user
+            final String jwt = jwtUtil.generateToken(savedUser);
+
+            // Set JWT as HTTP-only cookie for better security
+            Cookie jwtCookie = new Cookie("jwt", jwt);
+            jwtCookie.setHttpOnly(true);
+            jwtCookie.setSecure(false); // Set to true in production with HTTPS
+            jwtCookie.setPath("/");
+            jwtCookie.setMaxAge(24 * 60 * 60); // 24 hours
+            response.addCookie(jwtCookie);
+
+            return ResponseEntity.ok(new AuthResponse(jwt, UserDTO.fromEntity(savedUser)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
         }
-        if (userService.existsByEmail(user.getEmail())) {
-            return ResponseEntity.badRequest().body("Email is already in use!");
-        }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        User savedUser = userService.saveUser(user);
-        return ResponseEntity.ok(savedUser);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody User user) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+    public ResponseEntity<?> loginUser(@RequestBody User user, HttpServletResponse response) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
 
-        final UserDetails userDetails = userService.loadUserByUsername(user.getUsername());
-        final String jwt = jwtUtil.generateToken((User) userDetails);
+            final UserDetails userDetails = userService.loadUserByUsername(user.getUsername());
+            final String jwt = jwtUtil.generateToken((User) userDetails);
+            User userData = (User) userDetails;
 
-        // Return proper JSON response with token and user data
-        LoginResponse loginResponse = new LoginResponse(jwt, (User) userDetails);
-        return ResponseEntity.ok(loginResponse);
+            // Set JWT as HTTP-only cookie for better security
+            Cookie jwtCookie = new Cookie("jwt", jwt);
+            jwtCookie.setHttpOnly(true);
+            jwtCookie.setSecure(false); // Set to true in production with HTTPS
+            jwtCookie.setPath("/");
+            jwtCookie.setMaxAge(24 * 60 * 60); // 24 hours
+            response.addCookie(jwtCookie);
+
+            return ResponseEntity.ok(new AuthResponse(jwt, UserDTO.fromEntity(userData)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Invalid username or password");
+        }
     }
 
     @GetMapping
@@ -76,6 +115,90 @@ public class UserController {
         Optional<User> user = userService.getUserByUsername(username);
         return user.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<User> getCurrentUserProfile(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        return ResponseEntity.ok(user);
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<User> updateCurrentUserProfile(@RequestBody User userDetails, Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+
+        // Update only non-null fields
+        if (userDetails.getUsername() != null) {
+            currentUser.setUsername(userDetails.getUsername());
+        }
+        if (userDetails.getEmail() != null) {
+            currentUser.setEmail(userDetails.getEmail());
+        }
+        if (userDetails.getFirstName() != null) {
+            currentUser.setFirstName(userDetails.getFirstName());
+        }
+        if (userDetails.getLastName() != null) {
+            currentUser.setLastName(userDetails.getLastName());
+        }
+        if (userDetails.getBio() != null) {
+            currentUser.setBio(userDetails.getBio());
+        }
+
+        // Update employer-specific fields if user is an employer
+        if ("EMPLOYER".equals(currentUser.getRole().name())) {
+            if (userDetails.getCompanyName() != null) {
+                currentUser.setCompanyName(userDetails.getCompanyName());
+            }
+            if (userDetails.getCompanyDescription() != null) {
+                currentUser.setCompanyDescription(userDetails.getCompanyDescription());
+            }
+            if (userDetails.getCompanyWebsite() != null) {
+                currentUser.setCompanyWebsite(userDetails.getCompanyWebsite());
+            }
+            if (userDetails.getCompanyLocation() != null) {
+                currentUser.setCompanyLocation(userDetails.getCompanyLocation());
+            }
+            if (userDetails.getContactPhone() != null) {
+                currentUser.setContactPhone(userDetails.getContactPhone());
+            }
+        }
+
+        User updatedUser = userService.saveUser(currentUser);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @PutMapping("/profile/employer")
+    public ResponseEntity<?> updateEmployerProfile(@RequestBody User userDetails, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).body("Authentication required");
+        }
+
+        User currentUser = (User) authentication.getPrincipal();
+
+        // Verify user is an employer
+        if (!"EMPLOYER".equals(currentUser.getRole().name())) {
+            return ResponseEntity.status(403).body("Access denied: Only employers can update employer profile");
+        }
+
+        // Update employer-specific fields
+        if (userDetails.getCompanyName() != null) {
+            currentUser.setCompanyName(userDetails.getCompanyName());
+        }
+        if (userDetails.getCompanyDescription() != null) {
+            currentUser.setCompanyDescription(userDetails.getCompanyDescription());
+        }
+        if (userDetails.getCompanyWebsite() != null) {
+            currentUser.setCompanyWebsite(userDetails.getCompanyWebsite());
+        }
+        if (userDetails.getCompanyLocation() != null) {
+            currentUser.setCompanyLocation(userDetails.getCompanyLocation());
+        }
+        if (userDetails.getContactPhone() != null) {
+            currentUser.setContactPhone(userDetails.getContactPhone());
+        }
+
+        User updatedUser = userService.saveUser(currentUser);
+        return ResponseEntity.ok(updatedUser);
     }
 
     @PostMapping
@@ -122,5 +245,18 @@ public class UserController {
 
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        // Clear the JWT cookie
+        Cookie jwtCookie = new Cookie("jwt", null);
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(false); // Set to true in production with HTTPS
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(0); // Expire immediately
+        response.addCookie(jwtCookie);
+
+        return ResponseEntity.ok("Logged out successfully");
     }
 }
