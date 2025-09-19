@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +24,32 @@ public class JwtUtil {
 
     @Value("${jwt.expiration}")
     private Long expiration;
+
+    // Create a proper secret key that's guaranteed to be secure enough for HS512
+    private SecretKey getSigningKey() {
+        try {
+            // Hash the secret to ensure we have enough entropy
+            MessageDigest sha512 = MessageDigest.getInstance("SHA-512");
+            byte[] hashedSecret = sha512.digest(secret.getBytes());
+            
+            // Take the first 64 bytes (512 bits) for HS512
+            byte[] keyBytes = new byte[64];
+            System.arraycopy(hashedSecret, 0, keyBytes, 0, Math.min(hashedSecret.length, 64));
+            
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (NoSuchAlgorithmException e) {
+            // Fallback to a deterministic approach
+            byte[] keyBytes = new byte[64]; // 512 bits for HS512
+            byte[] secretBytes = secret.getBytes();
+            
+            // Fill the keyBytes array with our secret bytes, cycling if necessary
+            for (int i = 0; i < keyBytes.length; i++) {
+                keyBytes[i] = secretBytes[i % secretBytes.length];
+            }
+            
+            return Keys.hmacShaKeyFor(keyBytes);
+        }
+    }
 
     public String getUsernameFromToken(String token) {
         return getClaimFromToken(token, Claims::getSubject);
@@ -37,8 +65,11 @@ public class JwtUtil {
     }
 
     private Claims getAllClaimsFromToken(String token) {
-        SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
-        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     private Boolean isTokenExpired(String token) {
@@ -53,13 +84,12 @@ public class JwtUtil {
     }
 
     private String doGenerateToken(Map<String, Object> claims, String subject) {
-        SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000))
-                .signWith(key, SignatureAlgorithm.HS512)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
 

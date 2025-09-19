@@ -1,5 +1,6 @@
 package org.jobai.skillbridge.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -39,15 +40,19 @@ public class User implements UserDetails {
     private String country;
     
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Education> educations;
     
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Experience> experiences;
     
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Skill> skills;
     
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Portfolio> portfolios;
     
     private boolean isActive = true;
@@ -191,6 +196,7 @@ public class User implements UserDetails {
         this.country = country;
     }
 
+    @JsonIgnore
     public List<Education> getEducations() {
         return educations;
     }
@@ -199,6 +205,7 @@ public class User implements UserDetails {
         this.educations = educations;
     }
 
+    @JsonIgnore
     public List<Experience> getExperiences() {
         return experiences;
     }
@@ -207,6 +214,7 @@ public class User implements UserDetails {
         this.experiences = experiences;
     }
 
+    @JsonIgnore
     public List<Skill> getSkills() {
         return skills;
     }
@@ -215,6 +223,7 @@ public class User implements UserDetails {
         this.skills = skills;
     }
 
+    @JsonIgnore
     public List<Portfolio> getPortfolios() {
         return portfolios;
     }
