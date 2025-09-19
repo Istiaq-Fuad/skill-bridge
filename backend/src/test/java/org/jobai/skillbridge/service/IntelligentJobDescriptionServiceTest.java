@@ -9,6 +9,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,6 +28,9 @@ class IntelligentJobDescriptionServiceTest {
     @Mock
     private MistralAiService mistralAiService;
 
+    @Mock
+    private ObjectMapper objectMapper;
+
     @InjectMocks
     private IntelligentJobDescriptionService intelligentJobDescriptionService;
 
@@ -34,7 +40,7 @@ class IntelligentJobDescriptionServiceTest {
     }
 
     @Test
-    void testGenerateJobDescription() {
+    void testGenerateJobDescription() throws Exception {
         // Given
         String jobTitle = "Software Engineer";
         String industry = "Technology";
@@ -48,6 +54,28 @@ class IntelligentJobDescriptionServiceTest {
         
         when(mistralAiService.generateText(any(String.class), any(String.class)))
                 .thenReturn(aiResponse);
+
+        // Mock ObjectMapper
+        com.fasterxml.jackson.databind.JsonNode jsonNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        when(objectMapper.readTree(anyString())).thenReturn(jsonNode);
+        
+        // Mock JSON node responses
+        when(jsonNode.has(anyString())).thenReturn(true);
+        when(jsonNode.get("jobTitle")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("companyOverview")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("jobSummary")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("responsibilities")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("requiredQualifications")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("technicalSkills")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("softSkills")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("benefits")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("workEnvironment")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        
+        com.fasterxml.jackson.databind.JsonNode textNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        when(textNode.asText()).thenReturn("test");
+        when(jsonNode.get("jobTitle").asText()).thenReturn("Software Engineer");
+        when(jsonNode.get("companyOverview").asText()).thenReturn("Tech company");
+        when(jsonNode.get("jobSummary").asText()).thenReturn("Exciting role");
 
         // When
         IntelligentJobDescriptionService.JobDescriptionGenerationResult result = 
@@ -100,7 +128,7 @@ class IntelligentJobDescriptionServiceTest {
     }
 
     @Test
-    void testOptimizeJobDescription() {
+    void testOptimizeJobDescription() throws Exception {
         // Given
         JobPost jobPost = createTestJobPost(1L);
         User employer = createTestUser(1L);
@@ -113,6 +141,30 @@ class IntelligentJobDescriptionServiceTest {
         
         when(mistralAiService.generateText(any(String.class), any(String.class)))
                 .thenReturn(aiResponse);
+
+        // Mock ObjectMapper
+        com.fasterxml.jackson.databind.JsonNode jsonNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        when(objectMapper.readTree(anyString())).thenReturn(jsonNode);
+        
+        // Mock JSON node responses
+        when(jsonNode.has(anyString())).thenReturn(true);
+        when(jsonNode.get("titleOptimization")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("descriptionEnhancements")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("responsibilityImprovements")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("qualificationBalancing")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("skillAlignment")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("benefitHighlighting")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("diversityInclusion")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("callToAction")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        
+        com.fasterxml.jackson.databind.JsonNode textNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        com.fasterxml.jackson.databind.JsonNode arrayNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        when(textNode.asText()).thenReturn("test");
+        when(arrayNode.isArray()).thenReturn(true);
+        when(jsonNode.get("titleOptimization").asText()).thenReturn("Senior Software Engineer");
+        when(jsonNode.get("descriptionEnhancements")).thenReturn(arrayNode);
+        when(jsonNode.get("responsibilityImprovements")).thenReturn(arrayNode);
+        when(jsonNode.get("callToAction").asText()).thenReturn("Apply now");
 
         // When
         IntelligentJobDescriptionService.JobDescriptionOptimizationResult result = 
@@ -141,7 +193,7 @@ class IntelligentJobDescriptionServiceTest {
     }
 
     @Test
-    void testSuggestSkills() {
+    void testSuggestSkills() throws Exception {
         // Given
         String jobTitle = "Software Engineer";
         String industry = "Technology";
@@ -154,6 +206,31 @@ class IntelligentJobDescriptionServiceTest {
         
         when(mistralAiService.generateText(any(String.class), any(String.class)))
                 .thenReturn(aiResponse);
+
+        // Mock ObjectMapper
+        com.fasterxml.jackson.databind.JsonNode jsonNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        com.fasterxml.jackson.databind.JsonNode techSkillsNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        com.fasterxml.jackson.databind.JsonNode langNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        when(objectMapper.readTree(anyString())).thenReturn(jsonNode);
+        
+        // Mock JSON node responses
+        when(jsonNode.has(anyString())).thenReturn(true);
+        when(jsonNode.get("technicalSkills")).thenReturn(techSkillsNode);
+        when(techSkillsNode.isObject()).thenReturn(true);
+        when(techSkillsNode.fields()).thenReturn(new java.util.HashMap<String, com.fasterxml.jackson.databind.JsonNode>().entrySet().iterator());
+        when(jsonNode.get("frameworksAndTools")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("domainKnowledge")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("certifications")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("emergingTechnologies")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("softSkills")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        
+        com.fasterxml.jackson.databind.JsonNode arrayNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        when(arrayNode.isArray()).thenReturn(true);
+        when(jsonNode.get("frameworksAndTools")).thenReturn(arrayNode);
+        when(jsonNode.get("domainKnowledge")).thenReturn(arrayNode);
+        when(jsonNode.get("certifications")).thenReturn(arrayNode);
+        when(jsonNode.get("emergingTechnologies")).thenReturn(arrayNode);
+        when(jsonNode.get("softSkills")).thenReturn(arrayNode);
 
         // When
         IntelligentJobDescriptionService.SkillSuggestionResult result = 
@@ -185,7 +262,7 @@ class IntelligentJobDescriptionServiceTest {
     }
 
     @Test
-    void testSuggestSalaryRanges() {
+    void testSuggestSalaryRanges() throws Exception {
         // Given
         String jobTitle = "Software Engineer";
         String industry = "Technology";
@@ -199,6 +276,39 @@ class IntelligentJobDescriptionServiceTest {
         
         when(mistralAiService.generateText(any(String.class), any(String.class)))
                 .thenReturn(aiResponse);
+
+        // Mock ObjectMapper
+        com.fasterxml.jackson.databind.JsonNode jsonNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        com.fasterxml.jackson.databind.JsonNode salaryRangesNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        when(objectMapper.readTree(anyString())).thenReturn(jsonNode);
+        
+        // Mock JSON node responses
+        when(jsonNode.has(anyString())).thenReturn(true);
+        when(jsonNode.get("salaryRanges")).thenReturn(salaryRangesNode);
+        when(salaryRangesNode.isObject()).thenReturn(true);
+        when(salaryRangesNode.has(anyString())).thenReturn(true);
+        when(salaryRangesNode.get("currency")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(salaryRangesNode.get("minimum")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(salaryRangesNode.get("midpoint")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(salaryRangesNode.get("maximum")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("marketPositioning")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("geographicVariations")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("benefitsPackage")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        when(jsonNode.get("performanceIncentives")).thenReturn(mock(com.fasterxml.jackson.databind.JsonNode.class));
+        
+        com.fasterxml.jackson.databind.JsonNode textNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        com.fasterxml.jackson.databind.JsonNode intNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        com.fasterxml.jackson.databind.JsonNode arrayNode = mock(com.fasterxml.jackson.databind.JsonNode.class);
+        when(textNode.asText()).thenReturn("test");
+        when(intNode.asInt()).thenReturn(100);
+        when(arrayNode.isArray()).thenReturn(true);
+        when(salaryRangesNode.get("currency").asText()).thenReturn("BDT");
+        when(salaryRangesNode.get("minimum").asInt()).thenReturn(60000);
+        when(salaryRangesNode.get("midpoint").asInt()).thenReturn(80000);
+        when(salaryRangesNode.get("maximum").asInt()).thenReturn(120000);
+        when(jsonNode.get("marketPositioning").asText()).thenReturn("Competitive");
+        when(jsonNode.get("benefitsPackage")).thenReturn(arrayNode);
+        when(jsonNode.get("performanceIncentives")).thenReturn(arrayNode);
 
         // When
         IntelligentJobDescriptionService.SalarySuggestionResult result = 

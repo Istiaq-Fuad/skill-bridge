@@ -6,14 +6,21 @@ import org.jobai.skillbridge.exception.AiServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.Iterator;
 
 @Service
 public class IntelligentJobDescriptionService {
     
     @Autowired
     private MistralAiService mistralAiService;
+    
+    @Autowired
+    private ObjectMapper objectMapper;
     
     /**
      * Generate an optimized job description based on minimal input
@@ -560,27 +567,106 @@ public class IntelligentJobDescriptionService {
     private JobDescriptionGenerationResult parseJobDescriptionResponse(String response) {
         JobDescriptionGenerationResult result = new JobDescriptionGenerationResult();
         
-        // In a real implementation, we would parse the JSON response
-        // For now, we'll create a simple implementation
-        result.setCompanyOverview("Leading technology company in Bangladesh");
-        result.setJobSummary("Exciting opportunity for a talented professional");
-        result.setResponsibilities(Arrays.asList(
-            "Develop and maintain software applications",
-            "Collaborate with cross-functional teams",
-            "Participate in code reviews and testing"
-        ));
-        result.setRequiredQualifications(Arrays.asList(
-            "Bachelor's degree in Computer Science or related field",
-            "3+ years of relevant experience"
-        ));
-        result.setPreferredQualifications(Arrays.asList(
-            "Master's degree preferred",
-            "Experience with cloud technologies"
-        ));
-        result.setTechnicalSkills(Arrays.asList("Java", "Spring Boot", "React"));
-        result.setSoftSkills(Arrays.asList("Communication", "Teamwork", "Problem-solving"));
-        result.setBenefits(Arrays.asList("Health insurance", "Flexible hours", "Professional development"));
-        result.setWorkEnvironment("Collaborative and innovative workplace");
+        try {
+            // Extract JSON from response (between markers)
+            String jsonResponse = extractJsonFromResponse(response);
+            if (jsonResponse == null) {
+                throw new AiServiceException("Could not extract JSON from AI response");
+            }
+            
+            // Parse JSON response
+            JsonNode root = objectMapper.readTree(jsonResponse);
+            
+            // Extract fields
+            if (root.has("jobTitle")) {
+                result.setJobTitle(root.get("jobTitle").asText());
+            }
+            
+            if (root.has("companyOverview")) {
+                result.setCompanyOverview(root.get("companyOverview").asText());
+            }
+            
+            if (root.has("jobSummary")) {
+                result.setJobSummary(root.get("jobSummary").asText());
+            }
+            
+            if (root.has("responsibilities") && root.get("responsibilities").isArray()) {
+                List<String> responsibilities = new ArrayList<>();
+                for (JsonNode node : root.get("responsibilities")) {
+                    responsibilities.add(node.asText());
+                }
+                result.setResponsibilities(responsibilities);
+            }
+            
+            if (root.has("requiredQualifications") && root.get("requiredQualifications").isArray()) {
+                List<String> qualifications = new ArrayList<>();
+                for (JsonNode node : root.get("requiredQualifications")) {
+                    qualifications.add(node.asText());
+                }
+                result.setRequiredQualifications(qualifications);
+            }
+            
+            if (root.has("preferredQualifications") && root.get("preferredQualifications").isArray()) {
+                List<String> qualifications = new ArrayList<>();
+                for (JsonNode node : root.get("preferredQualifications")) {
+                    qualifications.add(node.asText());
+                }
+                result.setPreferredQualifications(qualifications);
+            }
+            
+            if (root.has("technicalSkills") && root.get("technicalSkills").isArray()) {
+                List<String> skills = new ArrayList<>();
+                for (JsonNode node : root.get("technicalSkills")) {
+                    skills.add(node.asText());
+                }
+                result.setTechnicalSkills(skills);
+            }
+            
+            if (root.has("softSkills") && root.get("softSkills").isArray()) {
+                List<String> skills = new ArrayList<>();
+                for (JsonNode node : root.get("softSkills")) {
+                    skills.add(node.asText());
+                }
+                result.setSoftSkills(skills);
+            }
+            
+            if (root.has("benefits") && root.get("benefits").isArray()) {
+                List<String> benefits = new ArrayList<>();
+                for (JsonNode node : root.get("benefits")) {
+                    benefits.add(node.asText());
+                }
+                result.setBenefits(benefits);
+            }
+            
+            if (root.has("workEnvironment")) {
+                result.setWorkEnvironment(root.get("workEnvironment").asText());
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error parsing job description response: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Fallback to default values if parsing fails
+            result.setCompanyOverview("Leading technology company in Bangladesh");
+            result.setJobSummary("Exciting opportunity for a talented professional");
+            result.setResponsibilities(Arrays.asList(
+                "Develop and maintain software applications",
+                "Collaborate with cross-functional teams",
+                "Participate in code reviews and testing"
+            ));
+            result.setRequiredQualifications(Arrays.asList(
+                "Bachelor's degree in Computer Science or related field",
+                "3+ years of relevant experience"
+            ));
+            result.setPreferredQualifications(Arrays.asList(
+                "Master's degree preferred",
+                "Experience with cloud technologies"
+            ));
+            result.setTechnicalSkills(Arrays.asList("Java", "Spring Boot", "React"));
+            result.setSoftSkills(Arrays.asList("Communication", "Teamwork", "Problem-solving"));
+            result.setBenefits(Arrays.asList("Health insurance", "Flexible hours", "Professional development"));
+            result.setWorkEnvironment("Collaborative and innovative workplace");
+        }
         
         return result;
     }
@@ -593,34 +679,105 @@ public class IntelligentJobDescriptionService {
     private JobDescriptionOptimizationResult parseJobOptimizationResponse(String response) {
         JobDescriptionOptimizationResult result = new JobDescriptionOptimizationResult();
         
-        // In a real implementation, we would parse the JSON response
-        // For now, we'll create a simple implementation
-        result.setTitleOptimization("Senior Software Engineer - Backend");
-        result.setDescriptionEnhancements(Arrays.asList(
-            "Add more details about company culture",
-            "Clarify growth opportunities"
-        ));
-        result.setResponsibilityImprovements(Arrays.asList(
-            "Make responsibilities more outcome-focused",
-            "Add metrics for success"
-        ));
-        result.setQualificationBalancing(Arrays.asList(
-            "Consider removing overly restrictive requirements",
-            "Add alternative qualifications"
-        ));
-        result.setSkillAlignment(Arrays.asList(
-            "Include emerging technologies",
-            "Emphasize soft skills"
-        ));
-        result.setBenefitHighlighting(Arrays.asList(
-            "Better showcase remote work options",
-            "Highlight learning and development opportunities"
-        ));
-        result.setDiversityInclusion(Arrays.asList(
-            "Use inclusive language",
-            "Emphasize equal opportunity commitment"
-        ));
-        result.setCallToAction("Apply now to join our innovative team");
+        try {
+            // Extract JSON from response (between markers)
+            String jsonResponse = extractJsonFromResponse(response);
+            if (jsonResponse == null) {
+                throw new AiServiceException("Could not extract JSON from AI response");
+            }
+            
+            // Parse JSON response
+            JsonNode root = objectMapper.readTree(jsonResponse);
+            
+            // Extract fields
+            if (root.has("titleOptimization")) {
+                result.setTitleOptimization(root.get("titleOptimization").asText());
+            }
+            
+            if (root.has("descriptionEnhancements") && root.get("descriptionEnhancements").isArray()) {
+                List<String> enhancements = new ArrayList<>();
+                for (JsonNode node : root.get("descriptionEnhancements")) {
+                    enhancements.add(node.asText());
+                }
+                result.setDescriptionEnhancements(enhancements);
+            }
+            
+            if (root.has("responsibilityImprovements") && root.get("responsibilityImprovements").isArray()) {
+                List<String> improvements = new ArrayList<>();
+                for (JsonNode node : root.get("responsibilityImprovements")) {
+                    improvements.add(node.asText());
+                }
+                result.setResponsibilityImprovements(improvements);
+            }
+            
+            if (root.has("qualificationBalancing") && root.get("qualificationBalancing").isArray()) {
+                List<String> balancing = new ArrayList<>();
+                for (JsonNode node : root.get("qualificationBalancing")) {
+                    balancing.add(node.asText());
+                }
+                result.setQualificationBalancing(balancing);
+            }
+            
+            if (root.has("skillAlignment") && root.get("skillAlignment").isArray()) {
+                List<String> alignment = new ArrayList<>();
+                for (JsonNode node : root.get("skillAlignment")) {
+                    alignment.add(node.asText());
+                }
+                result.setSkillAlignment(alignment);
+            }
+            
+            if (root.has("benefitHighlighting") && root.get("benefitHighlighting").isArray()) {
+                List<String> highlighting = new ArrayList<>();
+                for (JsonNode node : root.get("benefitHighlighting")) {
+                    highlighting.add(node.asText());
+                }
+                result.setBenefitHighlighting(highlighting);
+            }
+            
+            if (root.has("diversityInclusion") && root.get("diversityInclusion").isArray()) {
+                List<String> diversity = new ArrayList<>();
+                for (JsonNode node : root.get("diversityInclusion")) {
+                    diversity.add(node.asText());
+                }
+                result.setDiversityInclusion(diversity);
+            }
+            
+            if (root.has("callToAction")) {
+                result.setCallToAction(root.get("callToAction").asText());
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error parsing job optimization response: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Fallback to default values if parsing fails
+            result.setTitleOptimization("Senior Software Engineer - Backend");
+            result.setDescriptionEnhancements(Arrays.asList(
+                "Add more details about company culture",
+                "Clarify growth opportunities"
+            ));
+            result.setResponsibilityImprovements(Arrays.asList(
+                "Make responsibilities more outcome-focused",
+                "Add metrics for success"
+            ));
+            result.setQualificationBalancing(Arrays.asList(
+                "Consider removing overly restrictive requirements",
+                "Add alternative qualifications"
+            ));
+            result.setSkillAlignment(Arrays.asList(
+                "Include emerging technologies",
+                "Emphasize soft skills"
+            ));
+            result.setBenefitHighlighting(Arrays.asList(
+                "Better showcase remote work options",
+                "Highlight learning and development opportunities"
+            ));
+            result.setDiversityInclusion(Arrays.asList(
+                "Use inclusive language",
+                "Emphasize equal opportunity commitment"
+            ));
+            result.setCallToAction("Apply now to join our innovative team");
+        }
         
         return result;
     }
@@ -633,19 +790,100 @@ public class IntelligentJobDescriptionService {
     private SkillSuggestionResult parseSkillSuggestionResponse(String response) {
         SkillSuggestionResult result = new SkillSuggestionResult();
         
-        // In a real implementation, we would parse the JSON response
-        // For now, we'll create a simple implementation
-        Map<String, List<String>> technicalSkills = new HashMap<>();
-        technicalSkills.put("programmingLanguages", Arrays.asList("Java", "Python", "JavaScript"));
-        technicalSkills.put("databases", Arrays.asList("PostgreSQL", "MongoDB"));
-        technicalSkills.put("cloudPlatforms", Arrays.asList("AWS", "Azure"));
-        technicalSkills.put("devOps", Arrays.asList("Docker", "Kubernetes"));
-        result.setTechnicalSkills(technicalSkills);
-        result.setFrameworksAndTools(Arrays.asList("Spring Boot", "React", "Node.js"));
-        result.setDomainKnowledge(Arrays.asList("Financial services", "E-commerce"));
-        result.setCertifications(Arrays.asList("AWS Certified Developer", "Oracle Certified Professional"));
-        result.setEmergingTechnologies(Arrays.asList("AI/ML", "Blockchain", "IoT"));
-        result.setSoftSkills(Arrays.asList("Leadership", "Communication", "Critical Thinking"));
+        try {
+            // Extract JSON from response (between markers)
+            String jsonResponse = extractJsonFromResponse(response);
+            if (jsonResponse == null) {
+                throw new AiServiceException("Could not extract JSON from AI response");
+            }
+            
+            // Parse JSON response
+            JsonNode root = objectMapper.readTree(jsonResponse);
+            
+            // Extract technical skills
+            if (root.has("technicalSkills") && root.get("technicalSkills").isObject()) {
+                Map<String, List<String>> technicalSkills = new HashMap<>();
+                JsonNode techSkillsNode = root.get("technicalSkills");
+                
+                Iterator<Map.Entry<String, JsonNode>> fields = techSkillsNode.fields();
+                while (fields.hasNext()) {
+                    Map.Entry<String, JsonNode> field = fields.next();
+                    String categoryName = field.getKey();
+                    JsonNode categoryNode = field.getValue();
+                    
+                    if (categoryNode.isArray()) {
+                        List<String> skills = new ArrayList<>();
+                        for (JsonNode node : categoryNode) {
+                            skills.add(node.asText());
+                        }
+                        technicalSkills.put(categoryName, skills);
+                    }
+                }
+                result.setTechnicalSkills(technicalSkills);
+            }
+            
+            // Extract frameworks and tools
+            if (root.has("frameworksAndTools") && root.get("frameworksAndTools").isArray()) {
+                List<String> frameworksAndTools = new ArrayList<>();
+                for (JsonNode node : root.get("frameworksAndTools")) {
+                    frameworksAndTools.add(node.asText());
+                }
+                result.setFrameworksAndTools(frameworksAndTools);
+            }
+            
+            // Extract domain knowledge
+            if (root.has("domainKnowledge") && root.get("domainKnowledge").isArray()) {
+                List<String> domainKnowledge = new ArrayList<>();
+                for (JsonNode node : root.get("domainKnowledge")) {
+                    domainKnowledge.add(node.asText());
+                }
+                result.setDomainKnowledge(domainKnowledge);
+            }
+            
+            // Extract certifications
+            if (root.has("certifications") && root.get("certifications").isArray()) {
+                List<String> certifications = new ArrayList<>();
+                for (JsonNode node : root.get("certifications")) {
+                    certifications.add(node.asText());
+                }
+                result.setCertifications(certifications);
+            }
+            
+            // Extract emerging technologies
+            if (root.has("emergingTechnologies") && root.get("emergingTechnologies").isArray()) {
+                List<String> emergingTechnologies = new ArrayList<>();
+                for (JsonNode node : root.get("emergingTechnologies")) {
+                    emergingTechnologies.add(node.asText());
+                }
+                result.setEmergingTechnologies(emergingTechnologies);
+            }
+            
+            // Extract soft skills
+            if (root.has("softSkills") && root.get("softSkills").isArray()) {
+                List<String> softSkills = new ArrayList<>();
+                for (JsonNode node : root.get("softSkills")) {
+                    softSkills.add(node.asText());
+                }
+                result.setSoftSkills(softSkills);
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error parsing skill suggestion response: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Fallback to default values if parsing fails
+            Map<String, List<String>> technicalSkills = new HashMap<>();
+            technicalSkills.put("programmingLanguages", Arrays.asList("Java", "Python", "JavaScript"));
+            technicalSkills.put("databases", Arrays.asList("PostgreSQL", "MongoDB"));
+            technicalSkills.put("cloudPlatforms", Arrays.asList("AWS", "Azure"));
+            technicalSkills.put("devOps", Arrays.asList("Docker", "Kubernetes"));
+            result.setTechnicalSkills(technicalSkills);
+            result.setFrameworksAndTools(Arrays.asList("Spring Boot", "React", "Node.js"));
+            result.setDomainKnowledge(Arrays.asList("Financial services", "E-commerce"));
+            result.setCertifications(Arrays.asList("AWS Certified Developer", "Oracle Certified Professional"));
+            result.setEmergingTechnologies(Arrays.asList("AI/ML", "Blockchain", "IoT"));
+            result.setSoftSkills(Arrays.asList("Leadership", "Communication", "Critical Thinking"));
+        }
         
         return result;
     }
@@ -658,35 +896,139 @@ public class IntelligentJobDescriptionService {
     private SalarySuggestionResult parseSalarySuggestionResponse(String response) {
         SalarySuggestionResult result = new SalarySuggestionResult();
         
-        // In a real implementation, we would parse the JSON response
-        // For now, we'll create a simple implementation
-        SalaryRange salaryRange = new SalaryRange();
-        salaryRange.setCurrency("BDT");
-        salaryRange.setMinimum(60000);
-        salaryRange.setMidpoint(80000);
-        salaryRange.setMaximum(120000);
-        result.setSalaryRanges(salaryRange);
-        result.setMarketPositioning("Competitive with market averages");
-        
-        Map<String, String> geographicVariations = new HashMap<>();
-        geographicVariations.put("dhaka", "60,000 - 120,000 BDT");
-        geographicVariations.put("chittagong", "50,000 - 100,000 BDT");
-        geographicVariations.put("sylhet", "55,000 - 110,000 BDT");
-        result.setGeographicVariations(geographicVariations);
-        
-        result.setBenefitsPackage(Arrays.asList(
-            "Health insurance", 
-            "Provident fund", 
-            "Annual bonuses",
-            "Professional development allowance"
-        ));
-        result.setPerformanceIncentives(Arrays.asList(
-            "Quarterly performance bonuses",
-            "Stock options for senior positions",
-            "Project completion bonuses"
-        ));
+        try {
+            // Extract JSON from response (between markers)
+            String jsonResponse = extractJsonFromResponse(response);
+            if (jsonResponse == null) {
+                throw new AiServiceException("Could not extract JSON from AI response");
+            }
+            
+            // Parse JSON response
+            JsonNode root = objectMapper.readTree(jsonResponse);
+            
+            // Extract salary ranges
+            if (root.has("salaryRanges") && root.get("salaryRanges").isObject()) {
+                JsonNode salaryRangesNode = root.get("salaryRanges");
+                SalaryRange salaryRange = new SalaryRange();
+                
+                if (salaryRangesNode.has("currency")) {
+                    salaryRange.setCurrency(salaryRangesNode.get("currency").asText());
+                }
+                
+                if (salaryRangesNode.has("minimum")) {
+                    salaryRange.setMinimum(salaryRangesNode.get("minimum").asInt());
+                }
+                
+                if (salaryRangesNode.has("midpoint")) {
+                    salaryRange.setMidpoint(salaryRangesNode.get("midpoint").asInt());
+                }
+                
+                if (salaryRangesNode.has("maximum")) {
+                    salaryRange.setMaximum(salaryRangesNode.get("maximum").asInt());
+                }
+                
+                result.setSalaryRanges(salaryRange);
+            }
+            
+            // Extract market positioning
+            if (root.has("marketPositioning")) {
+                result.setMarketPositioning(root.get("marketPositioning").asText());
+            }
+            
+            // Extract geographic variations
+            if (root.has("geographicVariations") && root.get("geographicVariations").isObject()) {
+                Map<String, String> geographicVariations = new HashMap<>();
+                JsonNode geoNode = root.get("geographicVariations");
+                
+                Iterator<Map.Entry<String, JsonNode>> fields = geoNode.fields();
+                while (fields.hasNext()) {
+                    Map.Entry<String, JsonNode> field = fields.next();
+                    geographicVariations.put(field.getKey(), field.getValue().asText());
+                }
+                result.setGeographicVariations(geographicVariations);
+            }
+            
+            // Extract benefits package
+            if (root.has("benefitsPackage") && root.get("benefitsPackage").isArray()) {
+                List<String> benefitsPackage = new ArrayList<>();
+                for (JsonNode node : root.get("benefitsPackage")) {
+                    benefitsPackage.add(node.asText());
+                }
+                result.setBenefitsPackage(benefitsPackage);
+            }
+            
+            // Extract performance incentives
+            if (root.has("performanceIncentives") && root.get("performanceIncentives").isArray()) {
+                List<String> performanceIncentives = new ArrayList<>();
+                for (JsonNode node : root.get("performanceIncentives")) {
+                    performanceIncentives.add(node.asText());
+                }
+                result.setPerformanceIncentives(performanceIncentives);
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error parsing salary suggestion response: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Fallback to default values if parsing fails
+            SalaryRange salaryRange = new SalaryRange();
+            salaryRange.setCurrency("BDT");
+            salaryRange.setMinimum(60000);
+            salaryRange.setMidpoint(80000);
+            salaryRange.setMaximum(120000);
+            result.setSalaryRanges(salaryRange);
+            result.setMarketPositioning("Competitive with market averages");
+            
+            Map<String, String> geographicVariations = new HashMap<>();
+            geographicVariations.put("dhaka", "60,000 - 120,000 BDT");
+            geographicVariations.put("chittagong", "50,000 - 100,000 BDT");
+            geographicVariations.put("sylhet", "55,000 - 110,000 BDT");
+            result.setGeographicVariations(geographicVariations);
+            
+            result.setBenefitsPackage(Arrays.asList(
+                "Health insurance", 
+                "Provident fund", 
+                "Annual bonuses",
+                "Professional development allowance"
+            ));
+            result.setPerformanceIncentives(Arrays.asList(
+                "Quarterly performance bonuses",
+                "Stock options for senior positions",
+                "Project completion bonuses"
+            ));
+        }
         
         return result;
+    }
+    
+    /**
+     * Extract JSON from AI response (between structured response markers)
+     * @param response AI response content
+     * @return Extracted JSON string or null if not found
+     */
+    private String extractJsonFromResponse(String response) {
+        if (response == null || response.isEmpty()) {
+            return null;
+        }
+        
+        // Look for JSON between markers
+        String startMarker = "---BEGIN STRUCTURED RESPONSE---";
+        String endMarker = "---END STRUCTURED RESPONSE---";
+        
+        int startIndex = response.indexOf(startMarker);
+        if (startIndex == -1) {
+            // If markers not found, try to parse the entire response as JSON
+            return response.trim();
+        }
+        
+        startIndex += startMarker.length();
+        int endIndex = response.indexOf(endMarker, startIndex);
+        
+        if (endIndex == -1) {
+            return null;
+        }
+        
+        return response.substring(startIndex, endIndex).trim();
     }
     
     // DTOs for results
