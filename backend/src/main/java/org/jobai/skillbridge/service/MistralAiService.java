@@ -35,6 +35,14 @@ public class MistralAiService {
     private static final String MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions";
     
     /**
+     * Get the MCP context service
+     * @return McpContextService instance
+     */
+    public McpContextService getMcpContextService() {
+        return mcpContextService;
+    }
+    
+    /**
      * Generate a resume for a user
      * @param userId The user ID
      * @param jobTitle Optional job title to tailor the resume for

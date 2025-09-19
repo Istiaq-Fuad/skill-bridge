@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/ai")
 public class AiController {
@@ -141,8 +143,8 @@ public class AiController {
     public ResponseEntity<Object> getProfileContext(Authentication authentication) {
         try {
             User user = (User) authentication.getPrincipal();
-            // This is a placeholder - you'd need to expose the context service properly
-            return ResponseEntity.ok("Context generation endpoint");
+            Map<String, Object> context = aiService.getMcpContextService().generateUserProfileContext(user.getId());
+            return ResponseEntity.ok(context);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error generating context: " + e.getMessage());
         }
