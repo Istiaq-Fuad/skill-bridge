@@ -8,6 +8,7 @@ import org.jobai.skillbridge.service.JobService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,6 +47,7 @@ public class JobController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('EMPLOYER')")
     public ResponseEntity<JobPost> createJob(@RequestBody JobPost jobData, Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         // Set the employer ID based on the authenticated user

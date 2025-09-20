@@ -1,5 +1,31 @@
 // API configuration and utilities
 import { handleApiError } from "./error-handler";
+import type {
+  JobDescriptionGenerationRequest,
+  JobDescriptionGenerationResponse,
+  JobDescriptionOptimizationRequest,
+  JobDescriptionOptimizationResponse,
+  SkillSuggestionRequest,
+  SkillSuggestionResponse,
+  SalarySuggestionRequest,
+  SalarySuggestionResponse,
+  ResumeParsingResponse,
+  ResumeQualityAnalysisRequest,
+  ResumeQualityAnalysisResponse,
+  CandidateMatchResponse,
+  JobMatchResponse,
+  AnalyticsOverviewResponse,
+  AnalyticsTrendsResponse,
+  PlatformInsightsRequest,
+  PlatformInsightsResponse,
+  StrategicRecommendationsResponse,
+  JobModerationResponse,
+  HealthCheckResponse,
+  EnhancedEmployerDashboardResponse,
+  JobPerformanceAnalysisResponse,
+  RecommendedCandidatesResponse,
+  ApplicationInsightsResponse,
+} from "./ai-api";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
@@ -521,12 +547,159 @@ class ApiClient {
       body: JSON.stringify({ updates }),
     });
   }
+
+  // AI-powered endpoints
+
+  // Intelligent Job Description API
+  async generateJobDescription(
+    data: JobDescriptionGenerationRequest
+  ): Promise<ApiResponse<JobDescriptionGenerationResponse>> {
+    return this.request("/intelligent-job-description/generate", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async optimizeJobDescription(
+    data: JobDescriptionOptimizationRequest
+  ): Promise<ApiResponse<JobDescriptionOptimizationResponse>> {
+    return this.request("/intelligent-job-description/optimize", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async suggestSkills(
+    data: SkillSuggestionRequest
+  ): Promise<ApiResponse<SkillSuggestionResponse>> {
+    return this.request("/intelligent-job-description/suggest-skills", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async suggestSalary(
+    data: SalarySuggestionRequest
+  ): Promise<ApiResponse<SalarySuggestionResponse>> {
+    return this.request("/intelligent-job-description/suggest-salary", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Resume Parsing API
+  async parseResume(file: File): Promise<ApiResponse<ResumeParsingResponse>> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return this.request("/resume-parsing/parse", {
+      method: "POST",
+      body: formData,
+      headers: {}, // Remove content-type to let browser set it with boundary
+    });
+  }
+
+  async analyzeResumeQuality(
+    data: ResumeQualityAnalysisRequest
+  ): Promise<ApiResponse<ResumeQualityAnalysisResponse>> {
+    return this.request("/resume-parsing/analyze-quality", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Advanced Job Matching API
+  async findMatchingCandidates(
+    jobId: number,
+    limit: number = 10
+  ): Promise<ApiResponse<CandidateMatchResponse>> {
+    return this.request(
+      `/advanced-matching/candidates/${jobId}?limit=${limit}`
+    );
+  }
+
+  async findMatchingJobs(
+    userId: number,
+    limit: number = 10
+  ): Promise<ApiResponse<JobMatchResponse>> {
+    return this.request(`/advanced-matching/jobs/${userId}?limit=${limit}`);
+  }
+
+  // Admin Analytics API
+  async getAnalyticsOverview(): Promise<
+    ApiResponse<AnalyticsOverviewResponse>
+  > {
+    return this.request("/admin/analytics/overview");
+  }
+
+  async getAnalyticsTrends(
+    days: number = 30
+  ): Promise<ApiResponse<AnalyticsTrendsResponse>> {
+    return this.request(`/admin/analytics/trends?days=${days}`);
+  }
+
+  async generatePlatformInsights(
+    analyticsData: PlatformInsightsRequest
+  ): Promise<ApiResponse<PlatformInsightsResponse>> {
+    return this.request("/admin/analytics/insights", {
+      method: "POST",
+      body: JSON.stringify(analyticsData),
+    });
+  }
+
+  async generateStrategicRecommendations(): Promise<
+    ApiResponse<StrategicRecommendationsResponse>
+  > {
+    return this.request("/admin/analytics/recommendations", {
+      method: "POST",
+    });
+  }
+
+  async moderateJobContent(
+    jobId: number
+  ): Promise<ApiResponse<JobModerationResponse>> {
+    return this.request(`/admin/moderate/job/${jobId}`, {
+      method: "POST",
+    });
+  }
+
+  async getDetailedHealthCheck(): Promise<ApiResponse<HealthCheckResponse>> {
+    return this.request("/admin/health/detailed");
+  }
+
+  // Enhanced Employer API
+  async getEnhancedDashboard(): Promise<
+    ApiResponse<EnhancedEmployerDashboardResponse>
+  > {
+    return this.request("/employers/dashboard-enhanced");
+  }
+
+  async analyzeJobPerformance(
+    jobId: number
+  ): Promise<ApiResponse<JobPerformanceAnalysisResponse>> {
+    return this.request(`/employers/jobs/${jobId}/analyze-performance`, {
+      method: "POST",
+    });
+  }
+
+  async getRecommendedCandidates(
+    jobId: number
+  ): Promise<ApiResponse<RecommendedCandidatesResponse>> {
+    return this.request(`/employers/jobs/${jobId}/recommended-candidates`);
+  }
+
+  async generateApplicationInsights(): Promise<
+    ApiResponse<ApplicationInsightsResponse>
+  > {
+    return this.request("/employers/analytics/application-insights", {
+      method: "POST",
+    });
+  }
 }
 
 // Client-side instance
 export const apiClient = new ApiClient();
 
-// Server-side API client factory
 export class ServerApiClient extends ApiClient {
   private serverToken?: string;
 

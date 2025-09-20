@@ -1,6 +1,10 @@
 package org.jobai.skillbridge.controller;
 
 import org.jobai.skillbridge.model.*;
+import org.jobai.skillbridge.repo.EducationRepository;
+import org.jobai.skillbridge.repo.ExperienceRepository;
+import org.jobai.skillbridge.repo.SkillRepository;
+import org.jobai.skillbridge.repo.PortfolioRepository;
 import org.jobai.skillbridge.service.ProfileService;
 import org.jobai.skillbridge.service.UserService;
 import org.jobai.skillbridge.util.ReflectionUtils;
@@ -21,6 +25,18 @@ public class ProfileController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private EducationRepository educationRepository;
+
+    @Autowired
+    private ExperienceRepository experienceRepository;
+
+    @Autowired
+    private SkillRepository skillRepository;
+
+    @Autowired
+    private PortfolioRepository portfolioRepository;
 
     // Main profile endpoints
     @GetMapping("/{userId}")
@@ -110,7 +126,19 @@ public class ProfileController {
     }
 
     @DeleteMapping("/education/{id}")
-    public ResponseEntity<Void> deleteEducation(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteEducation(@PathVariable Long id, Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+
+        // Validate ownership before deletion
+        Education education = educationRepository.findById(id).orElse(null);
+        if (education == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!education.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         profileService.deleteEducation(id);
         return ResponseEntity.noContent().build();
     }
@@ -142,7 +170,19 @@ public class ProfileController {
     }
 
     @DeleteMapping("/experience/{id}")
-    public ResponseEntity<Void> deleteExperience(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteExperience(@PathVariable Long id, Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+
+        // Validate ownership before deletion
+        Experience experience = experienceRepository.findById(id).orElse(null);
+        if (experience == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!experience.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         profileService.deleteExperience(id);
         return ResponseEntity.noContent().build();
     }
@@ -174,7 +214,19 @@ public class ProfileController {
     }
 
     @DeleteMapping("/skills/{id}")
-    public ResponseEntity<Void> deleteSkill(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteSkill(@PathVariable Long id, Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+
+        // Validate ownership before deletion
+        Skill skill = skillRepository.findById(id).orElse(null);
+        if (skill == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!skill.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         profileService.deleteSkill(id);
         return ResponseEntity.noContent().build();
     }
@@ -206,7 +258,19 @@ public class ProfileController {
     }
 
     @DeleteMapping("/portfolio/{id}")
-    public ResponseEntity<Void> deletePortfolio(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePortfolio(@PathVariable Long id, Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+
+        // Validate ownership before deletion
+        Portfolio portfolio = portfolioRepository.findById(id).orElse(null);
+        if (portfolio == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!portfolio.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         profileService.deletePortfolio(id);
         return ResponseEntity.noContent().build();
     }

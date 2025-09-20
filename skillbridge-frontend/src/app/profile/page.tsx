@@ -37,6 +37,14 @@ import {
   Portfolio,
   apiClient,
 } from "@/lib/api";
+import { enhancedApiClient, ResumeGenerationRequest } from "@/lib/enhanced-api";
+
+interface Job {
+  id: number;
+  title: string;
+  company: string;
+  requirements?: string[];
+}
 import {
   User,
   BookOpen,
@@ -61,6 +69,104 @@ export default function ProfilePage() {
   const { updateProfile: updateEmployerProfile } = useUpdateEmployerProfile();
   const router = useRouter();
 
+  // AI Resume Generator State and Logic
+  const [showResumePreview, setShowResumePreview] = useState(false);
+  const [resumePreview, setResumePreview] = useState("");
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+
+  useEffect(() => {
+    // Fetch jobs for tailoring resumes (mocked for now)
+    if (user?.role === "JOB_SEEKER") {
+      (async () => {
+        // Replace with actual API call
+        const response = await apiClient.getJobs();
+        setJobs(response.data || []);
+      })();
+    }
+  }, [user]);
+
+  async function generateResume(
+    profile: Profile | null,
+    job: Job | null
+  ): Promise<string> {
+    if (!profile || !user) {
+      return "No profile data available.";
+    }
+
+    try {
+      const resumeRequest: ResumeGenerationRequest = {
+        personalInfo: {
+          name: user.firstName || user.username || "User",
+          email: user.email || "",
+          phone: "", // Not available in Profile interface
+          location: "", // Not available in Profile interface
+        },
+        professionalSummary: profile.bio || "",
+        skills: profile.skills.map((skill) => skill.name),
+        experience: profile.experience.map((exp) => ({
+          company: exp.company,
+          position: exp.position,
+          startDate: exp.startDate,
+          endDate: exp.endDate || undefined,
+          description: exp.description || "",
+        })),
+        education: profile.education.map((edu) => ({
+          institution: edu.institution,
+          degree: edu.degree,
+          field: edu.fieldOfStudy,
+          graduationYear: new Date(edu.endDate || edu.startDate)
+            .getFullYear()
+            .toString(),
+        })),
+        template: job ? "targeted" : "standard",
+      };
+
+      const response = await enhancedApiClient.generateResume(resumeRequest);
+
+      if (response.success && response.data) {
+        return response.data.resumeContent;
+      } else {
+        throw new Error(response.error || "Failed to generate resume");
+      }
+    } catch (error) {
+      console.error("Resume generation failed:", error);
+      // Fallback to basic text format
+      return `Name: ${user.firstName || user.username || "User"}
+Email: ${user.email}
+
+Bio: ${profile.bio}
+
+Skills: ${profile.skills.map((s) => s.name).join(", ")}
+
+Education:
+${profile.education
+  .map((e) => `- ${e.degree} in ${e.fieldOfStudy} (${e.institution})`)
+  .join("\n")}
+
+Experience:
+${profile.experience
+  .map((ex) => `- ${ex.position} at ${ex.company}`)
+  .join("\n")}${
+        job
+          ? `
+
+Tailored for: ${job.title} @ ${job.company}`
+          : ""
+      }`;
+    }
+  }
+
+  function downloadResume(resume: string) {
+    // Simple text download as PDF (mock)
+    const blob = new Blob([resume], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "resume.pdf";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
   // Form states
   const [showSkillDialog, setShowSkillDialog] = useState(false);
   const [showEducationDialog, setShowEducationDialog] = useState(false);
@@ -580,6 +686,108 @@ export default function ProfilePage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* AI Resume Generator for Job Seekers */}
+        {user.role === "JOB_SEEKER" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Resume Generator</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="default"
+                    className="bg-gradient-to-r from-primary to-indigo-600 text-white"
+                  >
+                    Generate Resume with AI
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Generate Resume</DialogTitle>
+                    <DialogDescription>
+                      Create a resume using your profile data, or tailor it for
+                      a specific job.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Tabs defaultValue="general" className="mb-4">
+                    <TabsList className="grid grid-cols-2">
+                      <TabsTrigger value="general">General Resume</TabsTrigger>
+                      <TabsTrigger value="tailored">
+                        Tailored for Job
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="general">
+                      <Button
+                        className="w-full mt-2"
+                        onClick={async () => {
+                          setResumePreview(await generateResume(profile, null));
+                          setShowResumePreview(true);
+                        }}
+                      >
+                        Generate General Resume
+                      </Button>
+                    </TabsContent>
+                    <TabsContent value="tailored">
+                      <Select
+                        onValueChange={setSelectedJobId}
+                        value={selectedJobId || ""}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a job to tailor resume" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {jobs.map((job) => (
+                            <SelectItem key={job.id} value={String(job.id)}>
+                              {job.title} @ {job.company}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        className="w-full mt-2"
+                        disabled={!selectedJobId}
+                        onClick={async () => {
+                          const job = jobs.find(
+                            (j) => String(j.id) === selectedJobId
+                          );
+                          setResumePreview(
+                            await generateResume(profile, job || null)
+                          );
+                          setShowResumePreview(true);
+                        }}
+                      >
+                        Generate Tailored Resume
+                      </Button>
+                    </TabsContent>
+                  </Tabs>
+                  {showResumePreview && (
+                    <div className="mt-4 p-4 bg-muted rounded-lg max-h-96 overflow-auto">
+                      <h3 className="font-bold mb-2">Resume Preview</h3>
+                      <pre className="whitespace-pre-wrap text-sm text-foreground">
+                        {resumePreview}
+                      </pre>
+                      <div className="flex gap-2 mt-4">
+                        <Button
+                          variant="secondary"
+                          onClick={() => setShowResumePreview(false)}
+                        >
+                          Close Preview
+                        </Button>
+                        <Button
+                          variant="default"
+                          onClick={() => downloadResume(resumePreview)}
+                        >
+                          Download PDF
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+        )}
         {/* Profile Header */}
         <Card>
           <CardHeader>

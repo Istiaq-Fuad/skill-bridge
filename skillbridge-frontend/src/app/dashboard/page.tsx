@@ -1,33 +1,43 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, useEmployerDashboardStats } from "@/hooks";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Briefcase,
-  Users,
-  FileText,
-  TrendingUp,
-  Plus,
-  Eye,
-} from "lucide-react";
-import Link from "next/link";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Briefcase, Users, Brain, Sparkles, Clock } from "lucide-react";
+import { apiClient } from "@/lib/api";
+
+interface JobMatch {
+  jobId: number;
+  title: string;
+  company: string;
+  matchScore: number;
+}
+
+interface ApiJob {
+  jobId: string;
+  jobTitle: string;
+  company: string;
+  compatibilityScore: number;
+  skillsMatch: number;
+  experienceMatch: number;
+  locationMatch: number;
+  salaryMatch: number;
+  reasons: string[];
+}
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const { dashboardStats, isLoadingStats, fetchStats } =
     useEmployerDashboardStats();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [aiRecommendations, setAiRecommendations] = useState<string>("");
+  const [aiJobs, setAiJobs] = useState<JobMatch[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -38,8 +48,51 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user?.role === "EMPLOYER") {
       fetchStats();
+      fetchAiRecommendations();
     }
+    if (user?.role === "JOB_SEEKER") {
+      fetchAiJobs();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, fetchStats]);
+
+  const fetchAiRecommendations = async () => {
+    setAiLoading(true);
+    try {
+      const res = await apiClient.getEnhancedDashboard();
+      if (res.success && res.data?.aiRecommendations) {
+        setAiRecommendations(res.data.aiRecommendations);
+      }
+    } catch {
+      setAiRecommendations("");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const fetchAiJobs = async () => {
+    if (!user) return;
+
+    setAiLoading(true);
+    try {
+      const res = await apiClient.findMatchingJobs(user.id);
+      if (res.success && res.data?.jobs) {
+        // Map the API response to our expected format
+        setAiJobs(
+          res.data.jobs.map((job: ApiJob) => ({
+            jobId: parseInt(job.jobId),
+            title: job.jobTitle,
+            company: job.company,
+            matchScore: job.compatibilityScore,
+          }))
+        );
+      }
+    } catch {
+      setAiJobs([]);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -55,195 +108,163 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 lg:space-y-8">
+      <div className="space-y-6 max-w-7xl mx-auto p-6">
         {/* Welcome Section */}
-        <div className="bg-card rounded-lg shadow-sm border p-6">
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            Welcome back, {user.firstName || user.username}!
-          </h1>
-          <p className="text-muted-foreground">
-            {user.role === "JOB_SEEKER"
-              ? "Find your next opportunity and advance your career."
-              : "Manage your job postings and find the best talent."}
-          </p>
-          <Badge variant="secondary" className="mt-2">
-            {user.role === "JOB_SEEKER" ? "Job Seeker" : "Employer"}
-          </Badge>
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                Welcome back, {user.firstName || user.username || "User"}!
+              </h1>
+              <p className="text-muted-foreground text-lg">
+                {user.role === "JOB_SEEKER"
+                  ? "Discover opportunities with AI-powered job matching"
+                  : user.role === "EMPLOYER"
+                  ? "Manage your talent acquisition with intelligent tools"
+                  : "Oversee platform operations and analytics"}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="text-sm px-3 py-1">
+                {user.role === "JOB_SEEKER"
+                  ? "Job Seeker"
+                  : user.role === "EMPLOYER"
+                  ? "Employer"
+                  : "Administrator"}
+              </Badge>
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {user.role === "JOB_SEEKER" ? "Applications" : "Job Posts"}
-              </CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoadingStats
-                  ? "..."
-                  : user.role === "EMPLOYER"
-                  ? dashboardStats?.totalJobs || 0
-                  : 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {user.role === "JOB_SEEKER"
-                  ? "Active applications"
-                  : "Active listings"}
-              </p>
-            </CardContent>
-          </Card>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="ai">AI Features</TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {user.role === "JOB_SEEKER" ? "Interviews" : "Applications"}
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoadingStats
-                  ? "..."
-                  : user.role === "EMPLOYER"
-                  ? dashboardStats?.totalApplications || 0
-                  : 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {user.role === "JOB_SEEKER"
-                  ? "Scheduled interviews"
-                  : "Total received"}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {user.role === "JOB_SEEKER" ? "Profile Views" : "Pending"}
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoadingStats
-                  ? "..."
-                  : user.role === "EMPLOYER"
-                  ? dashboardStats?.pendingApplications || 0
-                  : 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {user.role === "JOB_SEEKER" ? "This month" : "Pending review"}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {user.role === "JOB_SEEKER" ? "Saved Jobs" : "Response Rate"}
-              </CardTitle>
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoadingStats
-                  ? "..."
-                  : user.role === "EMPLOYER"
-                  ? `${dashboardStats?.responseRate || 0}%`
-                  : 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {user.role === "JOB_SEEKER"
-                  ? "Bookmarked positions"
-                  : "Average response"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                {user.role === "JOB_SEEKER"
-                  ? "Get started with your job search"
-                  : "Manage your hiring process"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {user.role === "JOB_SEEKER" ? (
-                <>
-                  <div className="flex items-center space-x-4">
-                    <div className="w-2 h-2 bg-primary rounded-full"></div>
-                    <span className="text-sm">Complete your profile</span>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="w-2 h-2 bg-primary rounded-full"></div>
-                    <span className="text-sm">Browse available jobs</span>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="w-2 h-2 bg-muted rounded-full"></div>
-                    <span className="text-sm text-muted-foreground">
-                      Upload your resume
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      <span className="text-sm">Post a new job</span>
+          {/* Overview Tab - Only dynamic stats */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {user.role === "EMPLOYER" && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Active Jobs
+                    </CardTitle>
+                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {isLoadingStats ? "..." : dashboardStats?.totalJobs || 0}
                     </div>
-                    <Button asChild size="sm">
-                      <Link href="/jobs/create">Post Job</Link>
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      <span className="text-sm">Manage job posts</span>
-                    </div>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/employer/jobs">View Jobs</Link>
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      <span className="text-sm">Update company profile</span>
-                    </div>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/profile">Profile</Link>
-                    </Button>
-                  </div>
-                </>
+                    <p className="text-xs text-muted-foreground">
+                      Published listings
+                    </p>
+                  </CardContent>
+                </Card>
               )}
-            </CardContent>
-          </Card>
+              {user.role === "EMPLOYER" && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Applications
+                    </CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {isLoadingStats
+                        ? "..."
+                        : dashboardStats?.totalApplications || 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Total applications received
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+              {user.role === "EMPLOYER" && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Pending Reviews
+                    </CardTitle>
+                    <Clock className="h-4 w-4 text-orange-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {isLoadingStats
+                        ? "..."
+                        : dashboardStats?.pendingApplications || 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Need your attention
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+              {user.role === "JOB_SEEKER" && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      AI-Recommended Jobs
+                    </CardTitle>
+                    <Brain className="h-4 w-4 text-purple-600" />
+                  </CardHeader>
+                  <CardContent>
+                    {aiLoading ? (
+                      <div className="text-xs text-muted-foreground">
+                        Loading...
+                      </div>
+                    ) : (
+                      <div>
+                        {aiJobs.length > 0 ? (
+                          <ul className="list-disc ml-4">
+                            {aiJobs.map((job) => (
+                              <li key={job.jobId}>
+                                {job.title} @ {job.company} ({job.matchScore}%
+                                match)
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="text-xs text-muted-foreground">
+                            No recommendations yet.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>
-                Your latest activities on the platform
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-6 text-muted-foreground">
-                <p className="text-sm">No recent activity</p>
-                <p className="text-xs mt-1">
-                  Start exploring to see your activity here
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          {/* AI Features Tab - Dynamic AI recommendations and analytics */}
+          <TabsContent value="ai" className="space-y-6">
+            {user.role === "EMPLOYER" && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    AI Recommendations
+                  </CardTitle>
+                  <Sparkles className="h-4 w-4 text-yellow-600" />
+                </CardHeader>
+                <CardContent>
+                  {aiLoading ? (
+                    <div className="text-xs text-muted-foreground">
+                      Loading...
+                    </div>
+                  ) : (
+                    <div>{aiRecommendations || "No recommendations yet."}</div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            {/* Add more dynamic AI features here as needed */}
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );

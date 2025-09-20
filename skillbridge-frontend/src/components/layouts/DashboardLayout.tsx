@@ -24,6 +24,8 @@ import {
   Menu,
   X,
   Plus,
+  Shield,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -52,7 +54,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   if (user?.role === "EMPLOYER") {
-    navigation.push({ name: "Post Job", href: "/jobs/create", icon: Plus });
+    navigation.push(
+      { name: "Post Job", href: "/jobs/create", icon: Plus },
+      {
+        name: "Enhanced Dashboard",
+        href: "/employer/dashboard",
+        icon: Sparkles,
+      }
+    );
+  }
+
+  if (user?.role === "ADMIN") {
+    navigation.push({
+      name: "Admin Dashboard",
+      href: "/admin/enhanced-dashboard",
+      icon: Shield,
+    });
   }
 
   return (
